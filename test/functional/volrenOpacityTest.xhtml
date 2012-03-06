@@ -53,21 +53,22 @@
 <!-- END:TEST -->
 
   </head>
-  
+  <h1>Volume Rendering V-5</h1>
   <body>
     <X3D xmlns='http://www.web3d.org/specifications/x3d-namespace'
          showStat='true' showLog='true' width='500px' height='500px'>
       <Scene>
         <Group>
           <Viewpoint description='Default' />
-          <Transform>
-            <VolumeData DEF='volume' dimensions='4.0 2.5 4.2'>
-              <ImageTexture3D url='"volume.mtd"'/>
+          
+            <VolumeData DEF='volume' dimensions='4.0 4.0 4.0'>
+
+              <ImageTexture3D url='media/volume/aorta4096.png'/>
               <OpacityMapVolumeStyle>
-                <ImageTexture containerField='transferFunction' url='"transfer.png"'/>
+                 <ImageTexture containerField='transferFunction' url='transfer.png'/> 
               </OpacityMapVolumeStyle>
             </VolumeData>
-          </Transform>
+          
         </Group>
       </Scene>
     </X3D>
