@@ -2,6 +2,7 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html xmlns='http://www.w3.org/1999/xhtml'>
 
+    <!-- Copyright 2012 by John Congote <jcongote@vicomtech.org> -->
   <head>
     <meta http-equiv='Content-Type' content='text/html;charset=utf-8'/>
 
@@ -62,8 +63,7 @@
 <Group>
  
 <Background skyColor='0 0 0'/>
-<Shape>
-<Viewpoint description='Default' position='0 0 2.5'/>  
+<Viewpoint description='Default' position='0 0 2.5' zNear='0.0001' zFar='100'/>  
 <Appearance>
  
 <MultiTexture>
@@ -173,8 +173,8 @@
 				return mix( texture2D(uVolData,texpos1), texture2D(uVolData,texpos2), (volpos.z*numberOfSlices)-s1);
 			}
  
-             void main()
-             {             	
+            void main()
+            {             	
                 vec2 texC = vertexPosition.xy/vertexPosition.w;
                 texC.x = 0.5*texC.x + 0.5;
                 texC.y = 0.5*texC.y + 0.5;
@@ -221,7 +221,7 @@
 				src.a = 1.0; 
 
 				gl_FragColor = src;
-             }
+            }
        ]]>
        </ShaderPart>
      </ComposedShader>
