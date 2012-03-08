@@ -581,11 +581,11 @@ x3dom.registerNodeType(
 		    
 		    this.vrcFrontCubeShaderFieldBackCoord._vf.name='uBackCoord';
 		    this.vrcFrontCubeShaderFieldBackCoord._vf.type='SFInt32';
-		    this.vrcFrontCubeShaderFieldBackCoord._vf.value='0';
+		    this.vrcFrontCubeShaderFieldBackCoord._vf.value=0;
 
 		    this.vrcFrontCubeShaderFieldVolData._vf.name='uVolData';
 		    this.vrcFrontCubeShaderFieldVolData._vf.type='SFInt32';
-		    this.vrcFrontCubeShaderFieldVolData._vf.value='2';
+		    this.vrcFrontCubeShaderFieldVolData._vf.value=1;
 
 		    
 
