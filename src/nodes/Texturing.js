@@ -127,7 +127,7 @@ x3dom.registerNodeType(
             parentAdded: function(parent)
             {
                 Array.forEach(parent._parentNodes, function (shape) {
-                    shape._dirty.texture = true;
+					shape._dirty.texture = true;
                 });
             },
 
@@ -135,7 +135,10 @@ x3dom.registerNodeType(
             {
                 parent._cf.texture.node = null;
                 Array.forEach(parent._parentNodes, function (shape) {
-                    shape._dirty.texture = true;
+		    if (shape._dirty.texture !== undefined)
+		    {
+			shape._dirty.texture = true;
+		    }
                 });
             },
 
@@ -147,8 +150,8 @@ x3dom.registerNodeType(
             {
                 if (fieldName == "url")
                 {
-					//x3dom.ImageLoadManager.push( this );
-					this._complete = false;
+		    //x3dom.ImageLoadManager.push( this );
+		    this._complete = false;
                     Array.forEach(this._parentNodes, function (app) {
 						app.nodeChanged();
                         Array.forEach(app._parentNodes, function (shape) {
@@ -284,6 +287,21 @@ x3dom.registerNodeType(
         {
             nodeChanged: function()
             {
+	    /*
+				var nodeBagFill = false
+				var doc = this.findX3DDoc();
+
+				for (var i=0, n=doc._nodeBag.renderTextures.length; i<n; i++) {
+					if (doc._nodeBag.renderTextures[i] === this) {
+						nodeBagFill = true;
+					}
+				}				
+				
+				if (!nodeBagFill)
+				{
+					doc._nodeBag.renderTextures.push(this)
+				}*/
+				
                 this._clearParents = true;
             },
 

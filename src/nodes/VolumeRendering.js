@@ -9,7 +9,7 @@
  * Based on code originally provided by
  * http://www.x3dom.org
  */
- 
+
  /**
   * http://igraphics.com/Standards/ISO_IEC_19775_1_2_PDAM1_Candidate_2011_05_12/Part01/components/volume.html
   */
@@ -23,7 +23,7 @@ x3dom.registerNodeType(
             x3dom.nodeTypes.X3DVolumeDataNode.superClass.call(this, ctx);
 
             this.addField_SFVec3f(ctx, 'dimensions', 1, 1, 1);
-            this.addField_MFNode('voxels', x3dom.nodeTypes.X3DTexture3DNode);
+            //this.addField_MFNode('voxels', x3dom.nodeTypes.X3DTexture3DNode);
             //this.addField_SFBool(ctx, 'swapped', false);
             //this.addField_SFVec3f(ctx, 'sliceThickness', 1, 1, 1);
 
@@ -199,6 +199,7 @@ x3dom.registerNodeType(
 
             this.addField_SFNode('transferFunction', x3dom.nodeTypes.X3DTextureNode);
             this.addField_SFString(ctx, 'type', "simple");
+			this.style = "OpacityMapVolumeStyle";
         },
         {
             nodeChanged: function() {},
@@ -329,6 +330,7 @@ x3dom.registerNodeType(
 );
 
 /* ### ColorBox ### */
+//FIXME: No a real X3D Node
 x3dom.registerNodeType(
     "ColorBox",
     "Geometry3D",
@@ -342,57 +344,57 @@ x3dom.registerNodeType(
                 sy = this._vf.size.y,
                 sz = this._vf.size.z;
 
-			var geoCacheID = 'ColorBox_'+sx+'-'+sy+'-'+sz;
+	    var geoCacheID = 'ColorBox_'+sx+'-'+sy+'-'+sz;
 
-			if( x3dom.geoCache[geoCacheID] != undefined )
-			{
-				x3dom.debug.logInfo("Using ColorBox from Cache");
-				this._mesh = x3dom.geoCache[geoCacheID];
-			}
-			else
-			{
-				sx /= 2; sy /= 2; sz /= 2;
+	    if( x3dom.geoCache[geoCacheID] != undefined )
+	    {
+		x3dom.debug.logInfo("Using ColorBox from Cache");
+		this._mesh = x3dom.geoCache[geoCacheID];
+	    }
+	    else
+	    {
+		sx /= 2; sy /= 2; sz /= 2;
 
-				this._mesh._positions[0] = [
-					-sx,-sy,-sz,  -sx, sy,-sz,   sx, sy,-sz,   sx,-sy,-sz, //back   0,0,-1
-					-sx,-sy, sz,  -sx, sy, sz,   sx, sy, sz,   sx,-sy, sz, //front  0,0,1
-					-sx,-sy,-sz,  -sx,-sy, sz,  -sx, sy, sz,  -sx, sy,-sz, //left   -1,0,0
-					 sx,-sy,-sz,   sx,-sy, sz,   sx, sy, sz,   sx, sy,-sz, //right  1,0,0
-					-sx, sy,-sz,  -sx, sy, sz,   sx, sy, sz,   sx, sy,-sz, //top    0,1,0
-					-sx,-sy,-sz,  -sx,-sy, sz,   sx,-sy, sz,   sx,-sy,-sz  //bottom 0,-1,0
-				];
-				this._mesh._colors[0] = [
-					0,0,0,  0, 1,0,   1, 1,0,   1,0,0,
-					0,0, 1,  0, 1, 1,   1, 1, 1,   1,0, 1,
-					0,0,0,  0,0, 1,  0, 1, 1,  0, 1,0,
-					1,0,0,   1,0, 1,   1, 1, 1,   1, 1,0,
-					0, 1,0,  0, 1, 1,   1, 1, 1,   1, 1,0,
-					0,0,0,  0,0, 1,   1,0, 1,   1,0,0 
-				];	
-				
-				this._mesh._normals[0] = [
-					0,0,-1,  0,0,-1,   0,0,-1,   0,0,-1,
-					0,0,1,  0,0,1,   0,0,1,   0,0,1,
-					-1,0,0,  -1,0,0,  -1,0,0,  -1,0,0,
-					1,0,0,   1,0,0,   1,0,0,   1,0,0,
-					0,1,0,  0,1,0,   0,1,0,   0,1,0,
-					0,-1,0,  0,-1,0,   0,-1,0,   0,-1,0
-				];
+		this._mesh._positions[0] = [
+			-sx,-sy,-sz,  -sx, sy,-sz,   sx, sy,-sz,   sx,-sy,-sz, //back   0,0,-1
+			-sx,-sy, sz,  -sx, sy, sz,   sx, sy, sz,   sx,-sy, sz, //front  0,0,1
+			-sx,-sy,-sz,  -sx,-sy, sz,  -sx, sy, sz,  -sx, sy,-sz, //left   -1,0,0
+			 sx,-sy,-sz,   sx,-sy, sz,   sx, sy, sz,   sx, sy,-sz, //right  1,0,0
+			-sx, sy,-sz,  -sx, sy, sz,   sx, sy, sz,   sx, sy,-sz, //top    0,1,0
+			-sx,-sy,-sz,  -sx,-sy, sz,   sx,-sy, sz,   sx,-sy,-sz  //bottom 0,-1,0
+		];
+		this._mesh._colors[0] = [
+			0,0,0,  0, 1,0,   1, 1,0,   1,0,0,
+			0,0, 1,  0, 1, 1,   1, 1, 1,   1,0, 1,
+			0,0,0,  0,0, 1,  0, 1, 1,  0, 1,0,
+			1,0,0,   1,0, 1,   1, 1, 1,   1, 1,0,
+			0, 1,0,  0, 1, 1,   1, 1, 1,   1, 1,0,
+			0,0,0,  0,0, 1,   1,0, 1,   1,0,0
+		];
 
-				this._mesh._indices[0] = [
-					0,1,2, 2,3,0,
-					4,7,5, 5,7,6,
-					8,9,10, 10,11,8,
-					12,14,13, 14,12,15,
-					16,17,18, 18,19,16,
-					20,22,21, 22,20,23
-				];
-				this._mesh._invalidate = true;
-				this._mesh._numFaces = 12;
-				this._mesh._numCoords = 24;
+		this._mesh._normals[0] = [
+			0,0,-1,  0,0,-1,   0,0,-1,   0,0,-1,
+			0,0,1,  0,0,1,   0,0,1,   0,0,1,
+			-1,0,0,  -1,0,0,  -1,0,0,  -1,0,0,
+			1,0,0,   1,0,0,   1,0,0,   1,0,0,
+			0,1,0,  0,1,0,   0,1,0,   0,1,0,
+			0,-1,0,  0,-1,0,   0,-1,0,   0,-1,0
+		];
 
-				x3dom.geoCache[geoCacheID] = this._mesh;
-			}
+		this._mesh._indices[0] = [
+			0,1,2, 2,3,0,
+			4,7,5, 5,7,6,
+			8,9,10, 10,11,8,
+			12,14,13, 14,12,15,
+			16,17,18, 18,19,16,
+			20,22,21, 22,20,23
+		];
+		this._mesh._invalidate = true;
+		this._mesh._numFaces = 12;
+		this._mesh._numCoords = 24;
+
+		x3dom.geoCache[geoCacheID] = this._mesh;
+	    }
         },
         {
             fieldChanged: function(fieldName) {
@@ -402,12 +404,12 @@ x3dom.registerNodeType(
                         sz = this._vf.size.z / 2;
 
                     this._mesh._positions[0] = [
-    					-sx,-sy,-sz,  -sx, sy,-sz,   sx, sy,-sz,   sx,-sy,-sz, //back   0,0,-1
-    					-sx,-sy, sz,  -sx, sy, sz,   sx, sy, sz,   sx,-sy, sz, //front  0,0,1
-    					-sx,-sy,-sz,  -sx,-sy, sz,  -sx, sy, sz,  -sx, sy,-sz, //left   -1,0,0
-    					 sx,-sy,-sz,   sx,-sy, sz,   sx, sy, sz,   sx, sy,-sz, //right  1,0,0
-    					-sx, sy,-sz,  -sx, sy, sz,   sx, sy, sz,   sx, sy,-sz, //top    0,1,0
-    					-sx,-sy,-sz,  -sx,-sy, sz,   sx,-sy, sz,   sx,-sy,-sz  //bottom 0,-1,0
+			-sx,-sy,-sz,  -sx, sy,-sz,   sx, sy,-sz,   sx,-sy,-sz, //back   0,0,-1
+			-sx,-sy, sz,  -sx, sy, sz,   sx, sy, sz,   sx,-sy, sz, //front  0,0,1
+			-sx,-sy,-sz,  -sx,-sy, sz,  -sx, sy, sz,  -sx, sy,-sz, //left   -1,0,0
+			 sx,-sy,-sz,   sx,-sy, sz,   sx, sy, sz,   sx, sy,-sz, //right  1,0,0
+			-sx, sy,-sz,  -sx, sy, sz,   sx, sy, sz,   sx, sy,-sz, //top    0,1,0
+			-sx,-sy,-sz,  -sx,-sy, sz,   sx,-sy, sz,   sx,-sy,-sz  //bottom 0,-1,0
                     ];
 
                     Array.forEach(this._parentNodes, function (node) {
@@ -428,6 +430,24 @@ x3dom.registerNodeType(
             x3dom.nodeTypes.VolumeData.superClass.call(this, ctx);
 
             this.addField_SFNode('renderStyle', x3dom.nodeTypes.X3DVolumeRenderStyleNode);
+	    this.addField_SFNode('voxels', x3dom.nodeTypes.X3DImageTexture);
+	    
+	    this.vrcMultiTexture = new x3dom.nodeTypes.MultiTexture(ctx);
+	    this.vrcRenderTexture = new x3dom.nodeTypes.RenderedTexture(ctx);
+	    //var vrcVolumeTexture = new x3dom.nodeTypes.ImageTexture(ctx);
+	    this.vrcVolumeTexture = null;
+	    this.vrcBackCubeShape = new x3dom.nodeTypes.Shape(ctx);
+	    this.vrcBackCubeAppearance = new x3dom.nodeTypes.Appearance();
+	    this.vrcBackCubeGeometry = new x3dom.nodeTypes.ColorBox(ctx);
+	    this.vrcBackCubeShader = new x3dom.nodeTypes.ComposedShader(ctx);
+	    this.vrcBackCubeShaderVertex = new x3dom.nodeTypes.ShaderPart(ctx);
+	    this.vrcBackCubeShaderFragment = new x3dom.nodeTypes.ShaderPart(ctx);
+	    this.vrcFrontCubeShaderVertex = new x3dom.nodeTypes.ShaderPart(ctx);
+	    this.vrcFrontCubeShaderFragment = new x3dom.nodeTypes.ShaderPart(ctx);
+	    this.vrcFrontCubeShaderFieldBackCoord = new x3dom.nodeTypes.Field(ctx);
+	    this.vrcFrontCubeShaderFieldVolData = new x3dom.nodeTypes.Field(ctx);	    
+	    
+	    this.vrcFrontCubeShader = new x3dom.nodeTypes.ComposedShader(ctx);		    
         },
         {
             nodeChanged: function()
@@ -435,66 +455,174 @@ x3dom.registerNodeType(
                 if (!this._cf.appearance.node) {
                     this.addChild(x3dom.nodeTypes.Appearance.defaultNode());
 
-                    // create ComposedShader
-                    var shader = new x3dom.nodeTypes.ComposedShader();
-					this._cf.appearance.node.addChild(shader);
-					
-					// create and init vertex ShaderPart
-					var vert = new x3dom.nodeTypes.ShaderPart();
-					vert._vf.type = 'vertex';
-					
-					// FIXME; take from renderStyle
-					vert._vf.url.push(
-                        "attribute vec3 position;" +
-                        "attribute vec3 color;" +
-                        "varying vec3 fragColor;" +
-                        "uniform mat4 modelViewProjectionMatrix;" +
-                        "" +
-                        "void main(void) {" +
-                        "    fragColor = color;" +
-                        "    gl_Position = modelViewProjectionMatrix * vec4(position, 1.0);" +
-                        "}"
-				    );
-				    
-					shader.addChild(vert, 'parts');
-					vert.nodeChanged();
-					
-					// create and init fragment ShaderPart
-					var frag = new x3dom.nodeTypes.ShaderPart();
-					frag._vf.type = 'fragment';
-					
-					// FIXME; take from renderStyle
-					frag._vf.url.push(
-    					"#ifdef GL_ES             \n" +
-                        "  precision highp float; \n" +
-                        "#endif                   \n" +
-                        "" +
-                        "varying vec3 fragColor;" +
-                        "" +
-                        "void main(void) {" +
-                        "    gl_FragColor = vec4(fragColor, 1.0);" +
-                        "}"
-				    );
-					
-					shader.addChild(frag, 'parts');
-					frag.nodeChanged();
-					
-					// finally trigger node changed for ComposedShader
-					shader.nodeChanged();
+		    this.vrcVolumeTexture = this._vf.voxels;		    
+		    
+		    this.vrcBackCubeShaderVertex._vf.type = 'vertex';		    
+		    this.vrcBackCubeShaderVertex._vf.url.push (
+			"attribute vec3 position;" +
+			"attribute vec3 color;" +
+			"varying vec3 fragColor;" +
+			"uniform mat4 modelViewProjectionMatrix;" +
+			"" +
+			"void main(void) {" +
+			"    fragColor = color;" +
+			"    gl_Position = modelViewProjectionMatrix * vec4(position, 1.0);" +
+			"}"
+		    );
+
+		    this.vrcBackCubeShaderFragment._vf.type = 'fragment';
+		    this.vrcBackCubeShaderFragment._vf.url.push(
+			"#ifdef GL_ES             \n" +
+			"  precision highp float; \n" +
+			"#endif                   \n" +
+			"" +
+			"varying vec3 fragColor;" +
+			"" +
+			"void main(void) {" +
+			"    gl_FragColor = vec4(fragColor, 1.0);" +
+			"}"
+		    );
+		    
+		    this.vrcRenderTexture._vf.update='always';
+		    this.vrcRenderTexture._vf.dimensions='500 500 4';
+		    this.vrcRenderTexture._vf.repeatS='false';
+		    this.vrcRenderTexture._vf.repeatT='false';
+
+		    this.vrcBackCubeGeometry._vf.size = new x3dom.fields.SFVec3f(
+                        this._vf.dimensions.x, this._vf.dimensions.y, this._vf.dimensions.z);
+                    this.vrcBackCubeGeometry._vf.ccw = false;
+		    this.vrcBackCubeGeometry._vf.solid = true;
+		    
+		    this.vrcBackCubeShader.addChild(this.vrcBackCubeShaderFragment,'parts');
+		    this.vrcBackCubeShader.addChild(this.vrcBackCubeShaderVertex,'parts');
+		    this.vrcBackCubeAppearance.addChild(this.vrcBackCubeShader);
+		    this.vrcBackCubeShape.addChild(this.vrcBackCubeGeometry);
+		    this.vrcBackCubeShape.addChild(this.vrcBackCubeAppearance);
+		    this.vrcRenderTexture.addChild(this.vrcBackCubeShape);
+		    this.vrcMultiTexture.addChild(this.vrcVolumeTexture);
+		    this.vrcMultiTexture.addChild(this.vrcRenderTexture);
+
+		    this._cf.appearance.node.addChild(this.vrcMultiTexture);			    
+		    
+		    this.vrcFrontCubeShaderVertex._vf.type = 'vertex';
+		    this.vrcFrontCubeShaderVertex._vf.url.push(
+			"attribute vec3 position;"+
+			"attribute vec3 color;"+
+			"uniform mat4 modelViewProjectionMatrix;"+
+			"varying vec3 vertexColor;"+
+			"varying vec4 vertexPosition;"+
+			"void main()"+
+			"{"+
+			"vertexColor = color;"+
+			"vertexPosition = modelViewProjectionMatrix * vec4(position, 1.0);"+
+			"gl_Position = vertexPosition;"+
+			"}"
+		    );
+
+		    this.vrcFrontCubeShaderFragment._vf.type = 'fragment';
+		    this.vrcFrontCubeShaderFragment._vf.url.push(
+			"#ifdef GL_ES"+
+			"precision highp float;"+
+			"#endif"+
+			"uniform sampler2D uBackCoord;"+
+			"uniform sampler2D uVolData;"+
+			"varying vec3 vertexColor;"+
+			"varying vec4 vertexPosition;"+
+			"const float Steps = 60.0;"+
+			"const float numberOfSlices = 96.0;"+
+			"const float slicesOverX = 10.0;"+
+			"const float slicesOverY = 10.0;"+
+			"vec4 getVolumeValue(vec3 volpos)"+
+			"{"+
+			"float s1,s2;"+
+			"float dx1,dy1;"+
+			"float dx2,dy2;"+
+			"vec2 texpos1,texpos2;"+
+			"s1 = floor(volpos.z*numberOfSlices);"+
+			"s2 = s1+1.0;"+
+			"dx1 = fract(s1/slicesOverX);"+
+			"dy1 = floor(s1/slicesOverY)/slicesOverY;"+
+			"dx2 = fract(s2/slicesOverX);"+
+			"dy2 = floor(s2/slicesOverY)/slicesOverY;"+
+			"texpos1.x = dx1+(volpos.x/slicesOverX);"+
+			"texpos1.y = dy1+(volpos.y/slicesOverY);"+
+			"texpos2.x = dx2+(volpos.x/slicesOverX);"+
+			"texpos2.y = dy2+(volpos.y/slicesOverY);"+
+			"return mix( texture2D(uVolData,texpos1), texture2D(uVolData,texpos2), (volpos.z*numberOfSlices)-s1);"+
+			"}"+
+			"void main()"+
+			"{"+
+			"vec2 texC = vertexPosition.xy/vertexPosition.w;"+
+			"texC.x = 0.5*texC.x + 0.5;"+
+			"texC.y = 0.5*texC.y + 0.5;"+
+			"vec4 backColor = texture2D(uBackCoord,texC);"+
+			"vec3 dir = backColor.rgb - vertexColor.rgb;"+
+			"vec3 pos = vertexColor;"+
+			"vec4 src = vec4(0, 0, 0, 0);"+
+			"vec4 value = vec4(0, 0, 0, 0);"+
+			"float cont = 0.0;"+
+			"vec3 Step = dir/Steps;"+
+			"for(float i = 0.0; i < Steps; i+=1.0)"+
+			"{"+
+			"value = getVolumeValue(pos);"+
+			"if (value.a>0.0)"+
+			"cont+=1.0;"+
+			"src += value;"+
+			"pos.xyz += Step;"+
+			"if(pos.x > 1.0 || pos.y > 1.0 || pos.z > 1.0)"+
+			"break;"+
+			"}"+
+			"src.rgb /= Steps;"+
+			"src.a = 1.0;"+
+			"gl_FragColor = src;"+
+			"}"
+		    );
+
+		    
+		    this.vrcFrontCubeShaderFieldBackCoord._vf.name='uBackCoord';
+		    this.vrcFrontCubeShaderFieldBackCoord._vf.type='SFInt32';
+		    this.vrcFrontCubeShaderFieldBackCoord._vf.value='0';
+
+		    this.vrcFrontCubeShaderFieldVolData._vf.name='uVolData';
+		    this.vrcFrontCubeShaderFieldVolData._vf.type='SFInt32';
+		    this.vrcFrontCubeShaderFieldVolData._vf.value='2';
+
+		    
+
+		    this.vrcFrontCubeShader.addChild(this.vrcFrontCubeShaderVertex, 'parts');
+		    this.vrcFrontCubeShader.addChild(this.vrcFrontCubeShaderFragment, 'parts');
+		    
+		    this.vrcFrontCubeShader.addChild(this.vrcFrontCubeShaderFieldBackCoord, 'fields');
+		    this.vrcFrontCubeShader.addChild(this.vrcFrontCubeShaderFieldVolData, 'fields');
+	    
+		    this._cf.appearance.node.addChild(this.vrcFrontCubeShader);
+
+		    this.vrcBackCubeShaderVertex.nodeChanged();
+		    this.vrcBackCubeShaderFragment.nodeChanged();
+                    this.vrcBackCubeShader.nodeChanged();
+		    this.vrcBackCubeGeometry.nodeChanged();
+		    this.vrcBackCubeAppearance.nodeChanged();
+		    this.vrcBackCubeShape.nodeChanged();
+		    this.vrcRenderTexture.nodeChanged();
+		    this.vrcMultiTexture.nodeChanged();
+                    this.vrcFrontCubeShader.nodeChanged();		    
+		    this.vrcFrontCubeShaderVertex.nodeChanged();
+		    this.vrcFrontCubeShaderFragment.nodeChanged();
+		    this._cf.appearance.node.nodeChanged();
                 }
-                
+
                 if (!this._cf.geometry.node) {
                     this.addChild(new x3dom.nodeTypes.ColorBox());
-					
+
                     this._cf.geometry.node._vf.size = new x3dom.fields.SFVec3f(
-                             this._vf.dimensions.x, this._vf.dimensions.y, this._vf.dimensions.z);
-                    this._cf.geometry.node._vf.ccw = false;
-					this._cf.geometry.node._vf.solid = true;
-					
+                        this._vf.dimensions.x, this._vf.dimensions.y, this._vf.dimensions.z);
+                    this._cf.geometry.node._vf.ccw = true;
+		    this._cf.geometry.node._vf.solid = true;
+
 					// workaround to trigger field change...
                     this._cf.geometry.node.fieldChanged("size");
-					this._cf.geometry.node.fieldChanged("ccw");
-					this._cf.geometry.node.fieldChanged("solid");
+		    this._cf.geometry.node.fieldChanged("ccw");
+		    this._cf.geometry.node.fieldChanged("solid");
                 }
             },
 
