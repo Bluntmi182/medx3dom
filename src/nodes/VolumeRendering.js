@@ -200,6 +200,75 @@ x3dom.registerNodeType(
 
             this.addField_SFNode('transferFunction', x3dom.nodeTypes.X3DTextureNode);
             this.addField_SFString(ctx, 'type', "simple");
+	    
+	    this.vertexShader = "attribute vec3 position;"+
+		"attribute vec3 color;"+
+		"uniform mat4 modelViewProjectionMatrix;"+
+		"varying vec3 vertexColor;"+
+		"varying vec4 vertexPosition;"+
+		"void main()"+
+		"{"+
+		"vertexColor = color;"+
+		"vertexPosition = modelViewProjectionMatrix * vec4(position, 1.0);"+
+		"gl_Position = vertexPosition;"+
+		"}";
+		
+	    this.fragmentShader = "#ifdef GL_ES             \n" +
+		"  precision highp float; \n" +
+		"#endif                   \n" +
+		"" +
+		"uniform sampler2D uBackCoord;"+
+		"uniform sampler2D uVolData;"+
+		"varying vec3 vertexColor;"+
+		"varying vec4 vertexPosition;"+
+		"const float Steps = 60.0;"+
+		"const float numberOfSlices = 96.0;"+
+		"const float slicesOverX = 10.0;"+
+		"const float slicesOverY = 10.0;"+
+		"vec4 getVolumeValue(vec3 volpos)"+
+		"{"+
+		"float s1,s2;"+
+		"float dx1,dy1;"+
+		"float dx2,dy2;"+
+		"vec2 texpos1,texpos2;"+
+		"s1 = floor(volpos.z*numberOfSlices);"+
+		"s2 = s1+1.0;"+
+		"dx1 = fract(s1/slicesOverX);"+
+		"dy1 = floor(s1/slicesOverY)/slicesOverY;"+
+		"dx2 = fract(s2/slicesOverX);"+
+		"dy2 = floor(s2/slicesOverY)/slicesOverY;"+
+		"texpos1.x = dx1+(volpos.x/slicesOverX);"+
+		"texpos1.y = dy1+(volpos.y/slicesOverY);"+
+		"texpos2.x = dx2+(volpos.x/slicesOverX);"+
+		"texpos2.y = dy2+(volpos.y/slicesOverY);"+
+		"return mix( texture2D(uVolData,texpos1), texture2D(uVolData,texpos2), (volpos.z*numberOfSlices)-s1);"+
+		"}"+
+		"void main()"+
+		"{"+
+		"vec2 texC = vertexPosition.xy/vertexPosition.w;"+
+		"texC = 0.5*texC + 0.5;"+
+		"vec4 backColor = texture2D(uBackCoord,texC);"+
+		"vec3 dir = backColor.rgb - vertexColor.rgb;"+
+		"vec3 pos = vertexColor;"+
+		"vec4 src = vec4(0, 0, 0, 0);"+
+		"vec4 value = vec4(0, 0, 0, 0);"+
+		"float cont = 0.0;"+
+		"vec3 Step = dir/Steps;"+
+		"for(float i = 0.0; i < Steps; i+=1.0)"+
+		"{"+
+		"value = getVolumeValue(pos);"+
+		"if (value.a>0.0)"+
+		"cont+=1.0;"+
+		"src += value;"+
+		"pos.xyz += Step;"+
+		"if(pos.x > 1.0 || pos.y > 1.0 || pos.z > 1.0)"+
+		"break;"+
+		"}"+
+		"src.rgb /= Steps;"+
+		"src.a = 1.0;"+
+		"if(src.r <= 0.01 && src.g <= 0.01 && src.b <= 0.01) discard;"+
+		"gl_FragColor = src;"+
+		"}"
         },
         {
             nodeChanged: function() {},
@@ -537,79 +606,10 @@ x3dom.registerNodeType(
         		    
 		            // here goes the volume shader
         		    this.vrcFrontCubeShaderVertex._vf.type = 'vertex';
-        		    this.vrcFrontCubeShaderVertex._vf.url.push(
-        			"attribute vec3 position;"+
-        			"attribute vec3 color;"+
-        			"uniform mat4 modelViewProjectionMatrix;"+
-        			"varying vec3 vertexColor;"+
-        			"varying vec4 vertexPosition;"+
-        			"void main()"+
-        			"{"+
-        			"vertexColor = color;"+
-        			"vertexPosition = modelViewProjectionMatrix * vec4(position, 1.0);"+
-        			"gl_Position = vertexPosition;"+
-        			"}"
-        		    );
+        		    this.vrcFrontCubeShaderVertex._vf.url.push(this._cf.renderStyle.node.vertexShader);
 
         		    this.vrcFrontCubeShaderFragment._vf.type = 'fragment';
-        		    this.vrcFrontCubeShaderFragment._vf.url.push(
-        			"#ifdef GL_ES             \n" +
-        			"  precision highp float; \n" +
-        			"#endif                   \n" +
-        			"" +
-        			"uniform sampler2D uBackCoord;"+
-        			"uniform sampler2D uVolData;"+
-        			"varying vec3 vertexColor;"+
-        			"varying vec4 vertexPosition;"+
-        			"const float Steps = 60.0;"+
-        			"const float numberOfSlices = 96.0;"+
-        			"const float slicesOverX = 10.0;"+
-        			"const float slicesOverY = 10.0;"+
-        			"vec4 getVolumeValue(vec3 volpos)"+
-        			"{"+
-        			"float s1,s2;"+
-        			"float dx1,dy1;"+
-        			"float dx2,dy2;"+
-        			"vec2 texpos1,texpos2;"+
-        			"s1 = floor(volpos.z*numberOfSlices);"+
-        			"s2 = s1+1.0;"+
-        			"dx1 = fract(s1/slicesOverX);"+
-        			"dy1 = floor(s1/slicesOverY)/slicesOverY;"+
-        			"dx2 = fract(s2/slicesOverX);"+
-        			"dy2 = floor(s2/slicesOverY)/slicesOverY;"+
-        			"texpos1.x = dx1+(volpos.x/slicesOverX);"+
-        			"texpos1.y = dy1+(volpos.y/slicesOverY);"+
-        			"texpos2.x = dx2+(volpos.x/slicesOverX);"+
-        			"texpos2.y = dy2+(volpos.y/slicesOverY);"+
-        			"return mix( texture2D(uVolData,texpos1), texture2D(uVolData,texpos2), (volpos.z*numberOfSlices)-s1);"+
-        			"}"+
-        			"void main()"+
-        			"{"+
-        			"vec2 texC = vertexPosition.xy/vertexPosition.w;"+
-        			"texC = 0.5*texC + 0.5;"+
-        			"vec4 backColor = texture2D(uBackCoord,texC);"+
-        			"vec3 dir = backColor.rgb - vertexColor.rgb;"+
-        			"vec3 pos = vertexColor;"+
-        			"vec4 src = vec4(0, 0, 0, 0);"+
-        			"vec4 value = vec4(0, 0, 0, 0);"+
-        			"float cont = 0.0;"+
-        			"vec3 Step = dir/Steps;"+
-        			"for(float i = 0.0; i < Steps; i+=1.0)"+
-        			"{"+
-        			"value = getVolumeValue(pos);"+
-        			"if (value.a>0.0)"+
-        			"cont+=1.0;"+
-        			"src += value;"+
-        			"pos.xyz += Step;"+
-        			"if(pos.x > 1.0 || pos.y > 1.0 || pos.z > 1.0)"+
-        			"break;"+
-        			"}"+
-        			"src.rgb /= Steps;"+
-        			"src.a = 1.0;"+
-        			"if(src.r <= 0.01 && src.g <= 0.01 && src.b <= 0.01) discard;"+
-        			"gl_FragColor = src;"+
-        			"}"
-        		    );
+        		    this.vrcFrontCubeShaderFragment._vf.url.push(this._cf.renderStyle.node.fragmentShader);
 		    
         		    this.vrcFrontCubeShader.addChild(this.vrcFrontCubeShaderVertex, 'parts');
         		    this.vrcFrontCubeShaderVertex.nodeChanged();
