@@ -2241,7 +2241,9 @@ x3dom.gfx_webgl = (function () {
 							shape._webgl.primType.push(gl.TRIANGLES);
 						}
 					}
-				} else {
+				} /*else if(x3dom.isa(shape._cf.geometry.node, x3dom.nodeTypes.IndexedTriangleStripSet)) {
+					shape._webgl.primType = gl.TRIANGLE_STRIP;
+				} */else {
 					shape._webgl.primType = gl.TRIANGLES;
 				}
                 
@@ -3159,7 +3161,7 @@ x3dom.gfx_webgl = (function () {
             scene._webgl.fboPick.pixelData = [];
             //No Exception on file:// when starting with additional flags:
             //chrome.exe --enable-webgl --use-gl=desktop --log-level=0 
-            //           --allow-file-access-from-files --allow-file-access
+            //           --allow-file-access-from-files --allow-file-access  --disable-web-security
             x3dom.debug.logException(se + " (cannot pick)");
         }
         
