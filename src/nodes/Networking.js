@@ -39,7 +39,6 @@ x3dom.registerNodeType(
         }
     )
 );
-
 // ### Inline ###
 x3dom.registerNodeType(
     "Inline",
@@ -52,7 +51,7 @@ x3dom.registerNodeType(
             this.addField_SFBool(ctx, 'load', true);
 			this.addField_MFString(ctx, 'nameSpaceName', []);
 			this.addField_SFBool(ctx, 'mapDEFToID', false);
-			
+			this.count = 0;
 			
 			this.currentInline = ctx.xmlNode;
        },
@@ -67,13 +66,15 @@ x3dom.registerNodeType(
 
             nodeChanged: function ()
             {
+				x3dom.debug.logInfo('count ' + this.count);
                 var that = this;
 
                 var xhr = new window.XMLHttpRequest();
                 if(xhr.overrideMimeType)
                     xhr.overrideMimeType('text/xml');   //application/xhtml+xml
-                
-                this._nameSpace.doc.downloadCount += 1;
+					
+				this._nameSpace.doc.downloadCount += 1;
+				
 
                 xhr.onreadystatechange = function () {
                     if (xhr.readyState == xhr.DONE)
@@ -101,14 +102,20 @@ x3dom.registerNodeType(
                         //if (xhr.readyState == 3) x3dom.debug.logInfo(xhr.responseText);
                         return xhr;
                     }
-
-                    if ((xhr.status !== 200) && (xhr.status !== 0))
-                    {
+					x3dom.debug.logInfo('status ' + xhr.status);
+					if(xhr.status == 503 && this.count < 10) {
+						this.count++;
+						x3dom.debug.logInfo('503 ' + this.count);
+						window.setTimeout(this.nodeChanged(), 10000);
+					} else if ((xhr.status !== 200) && (xhr.status !== 0) || ((xhr.status == 503) && this.count > 9)) {
                         that._nameSpace.doc.downloadCount -= 1;
                         x3dom.debug.logError('XMLHttpRequest requires a web server running!');
+						this.count = 0;
                         return xhr;
-                    }
-
+                    }  else if ((xhr.status == 200) || (xhr.status == 0)) {
+						this.count = 0;
+					}
+					
                     x3dom.debug.logInfo('Inline: downloading '+that._vf.url+' done.');
 
                     if(navigator.appName != "Microsoft Internet Explorer")
@@ -171,12 +178,12 @@ x3dom.registerNodeType(
 );
 
 function setNamespace(prefix, childDomNode, mapDEFToID){
-	if(childDomNode instanceof Element) {
+	if(childDomNode instanceof Element && childDomNode.__setAttribute !== undefined) {
 	
-		if(childDomNode.hasAttribute('id'))	{
-			childDomNode.setAttribute('id', prefix.toString().replace(' ','') +'__'+ childDomNode.getAttribute('id'));	
+		if(childDomNode.hasAttribute('id') )	{
+			childDomNode.__setAttribute('id', prefix.toString().replace(' ','') +'__'+ childDomNode.getAttribute('id'));	
 		} else if (childDomNode.hasAttribute('DEF') && mapDEFToID){
-			childDomNode.setAttribute('id', prefix.toString().replace(' ','') +'__'+ childDomNode.getAttribute('DEF'));
+			childDomNode.__setAttribute('id', prefix.toString().replace(' ','') +'__'+ childDomNode.getAttribute('DEF'));
 		}
 	}
 	
