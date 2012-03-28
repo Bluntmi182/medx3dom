@@ -952,7 +952,7 @@ x3dom.registerNodeType(
 						}
 					}
 					this._mesh.splitMesh();
-				} else*/ if ( (positions.length > 65535) || hasNormal  || hasTexCoord || hasColor) {
+				} else */if ( (positions.length > 65535) || hasNormal  || hasTexCoord || hasColor) {
 					for (i=1; i < indexes.length-2; ++i)
 					{
 						if (indexes[i+1] == -1) {
@@ -1060,8 +1060,7 @@ x3dom.registerNodeType(
 			
 					this._mesh.splitMesh();
 	
-				} else {
-					
+				} else {	
 					for (i = 1; i < indexes.length; ++i)
 					{
 						if (indexes[i+1] == -1) {
@@ -1229,7 +1228,7 @@ x3dom.registerNodeType(
 							}
 						}
 						this._mesh.splitMesh();
-					} else*/ if ( (positions.length > 65535) || hasNormal  || hasTexCoord || hasColor) {
+					} else */if ( (positions.length > 65535) || hasNormal  || hasTexCoord || hasColor) {
 						
 						for (i=1; i < indexes.length-2; ++i)
 						{
@@ -1617,9 +1616,11 @@ x3dom.registerNodeType(
         },
         {
             fieldChanged: function (fieldName) {
-                Array.forEach(this._parentNodes, function (node) {
-                    node.fieldChanged("coord");
-                });
+                if (fieldName === "coord") {
+                    Array.forEach(this._parentNodes, function (node) {
+                        node.fieldChanged("coord");
+                    });
+                }
             },
 
             parentAdded: function (parent) {
@@ -1663,9 +1664,11 @@ x3dom.registerNodeType(
         },
         {
             fieldChanged: function (fieldName) {
-                Array.forEach(this._parentNodes, function (node) {
-                    node.fieldChanged("normal");
-                });
+                if (fieldName === "normal") {
+                    Array.forEach(this._parentNodes, function (node) {
+                        node.fieldChanged("normal");
+                    });
+                }
             },
 
             parentAdded: function (parent) {
@@ -1688,9 +1691,11 @@ x3dom.registerNodeType(
         },
         {
             fieldChanged: function (fieldName) {
-                Array.forEach(this._parentNodes, function (node) {
-                    node.fieldChanged("color");
-                });
+                if (fieldName === "color") {
+                    Array.forEach(this._parentNodes, function (node) {
+                        node.fieldChanged("color");
+                    });
+                }
             },
 
             parentAdded: function (parent) {

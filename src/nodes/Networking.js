@@ -51,8 +51,8 @@ x3dom.registerNodeType(
             this.addField_SFBool(ctx, 'load', true);
 			this.addField_MFString(ctx, 'nameSpaceName', []);
 			this.addField_SFBool(ctx, 'mapDEFToID', false);
+            
 			this.count = 0;
-			
 			this.currentInline = ctx.xmlNode;
        },
         {
@@ -64,56 +64,65 @@ x3dom.registerNodeType(
                 }
             },
 
-            nodeChanged: function ()
+           nodeChanged: function ()
             {
-				x3dom.debug.logInfo('count ' + this.count);
-                var that = this;
+				var that = this;
 
                 var xhr = new window.XMLHttpRequest();
-                if(xhr.overrideMimeType)
+                if (xhr.overrideMimeType)
                     xhr.overrideMimeType('text/xml');   //application/xhtml+xml
 					
 				this._nameSpace.doc.downloadCount += 1;
 				
-
-                xhr.onreadystatechange = function () {
-                    if (xhr.readyState == xhr.DONE)
-                    {
-                        if(xhr.responseXML == null)
-                            return xhr;
-                        
-                        delete xhr['onreadystatechange'];
-                        
-                        if(navigator.appName != "Microsoft Internet Explorer")
-                        {
-                            if (xhr.responseXML.documentElement.localName == 'parsererror')
-                            {
-                                that._nameSpace.doc.downloadCount -= 1;
-                                x3dom.debug.logError('XML parser failed on ' + that._vf.url +
-                                            ':\n' + xhr.responseXML.documentElement.textContent);
-                                return xhr;
-                            }
-                        }
-                    }
-                    else
-                    {
+                xhr.onreadystatechange = function () 
+                {
+					/*if (xhr.readyState == xhr.DONE)
+					{
+						if (xhr.responseXML == null)
+							return xhr;
+						
+						delete xhr['onreadystatechange'];
+							
+						if(navigator.appName != "Microsoft Internet Explorer")
+						{
+							if (xhr.responseXML.documentElement.localName == 'parsererror')
+							{
+								that._nameSpace.doc.downloadCount -= 1;
+								x3dom.debug.logError('XML parser failed on ' + that._vf.url +
+											':\n' + xhr.responseXML.documentElement.textContent);
+								return xhr;
+							}
+						}
+					}
+					else
+					{
                         // still loading
-                        //x3dom.debug.logInfo('Loading inlined data... (readyState: ' + xhr.readyState + ')');
-                        //if (xhr.readyState == 3) x3dom.debug.logInfo(xhr.responseText);
+						x3dom.debug.logInfo('Loading inlined data... (readyState: ' + xhr.readyState + ')');
+						//if (xhr.readyState == 3) x3dom.debug.logInfo(xhr.responseText);
+						return xhr;
+					}*/
+					if (xhr.readyState != 4) {
+						// still loading
+						x3dom.debug.logInfo('Loading inlined data... (readyState: ' + xhr.readyState + ')');
+						return;
+					}
+					
+					if (xhr.status === 202 && that.count < 10) {
+						that.count++;
+						x3dom.debug.logInfo('Statuscode 202 and send new Request');
+						window.setTimeout(function(){ 
+							that.nodeChanged(); 
+							}, 5000);
                         return xhr;
-                    }
-					x3dom.debug.logInfo('status ' + xhr.status);
-					if(xhr.status == 503 && this.count < 10) {
-						this.count++;
-						x3dom.debug.logInfo('503 ' + this.count);
-						window.setTimeout(this.nodeChanged(), 10000);
-					} else if ((xhr.status !== 200) && (xhr.status !== 0) || ((xhr.status == 503) && this.count > 9)) {
+					}
+					else if ((xhr.status !== 200) && (xhr.status !== 0)) {
                         that._nameSpace.doc.downloadCount -= 1;
                         x3dom.debug.logError('XMLHttpRequest requires a web server running!');
-						this.count = 0;
+						that.count = 0;
                         return xhr;
-                    }  else if ((xhr.status == 200) || (xhr.status == 0)) {
-						this.count = 0;
+                    }
+                    else if ((xhr.status == 200) || (xhr.status == 0)) {
+						that.count = 0;
 					}
 					
                     x3dom.debug.logInfo('Inline: downloading '+that._vf.url+' done.');
@@ -122,12 +131,18 @@ x3dom.registerNodeType(
                         var xml = xhr.responseXML;
                     else
                         var xml = new DOMParser().parseFromString(xhr.responseText, "text/xml");
-
+                    
+                    var inlScene = null;
+                    var newScene = null;
+                    var nameSpace = null;
+                    
                     //TODO; check if exists and FIXME: it's not necessarily the first scene in the doc!
-                    var inlScene = xml.getElementsByTagName('Scene')[0] || xml.getElementsByTagName('scene')[0];
-                    var newScene;
-                    var nameSpace;
-
+                    if (xml !== undefined && xml !== null)
+                    {
+                        inlScene = xml.getElementsByTagName('Scene')[0] || 
+                                   xml.getElementsByTagName('scene')[0];
+                    }
+                    
                     if (inlScene)
                     {
                         nameSpace = new x3dom.NodeNameSpace("", that._nameSpace.doc);
@@ -146,23 +161,27 @@ x3dom.registerNodeType(
                             } );
                         }
                     }
-                     else
+                    else {
                         x3dom.debug.logWarning('no Scene in ' + xml.localName);
+                    }
 
                     // trick to free memory, assigning a property to global object, then deleting it
                     var global = x3dom.getGlobal();
+                    
                     while (that._childNodes.length !== 0)
                         global['_remover'] = that.removeChild(that._childNodes[0]);
                     
                     delete global['_remover'];
 
-                    that.addChild(newScene);
-                    //that._xmlNode.appendChild (inlScene);
-
-                    that._nameSpace.doc.downloadCount -= 1;
-                    that._nameSpace.doc.needRender = true;
-                    x3dom.debug.logInfo('Inline: added '+that._vf.url+' to scene.');
-
+                    if (newScene)
+                    {
+                        that.addChild(newScene);
+                        
+                        that._nameSpace.doc.downloadCount -= 1;
+                        that._nameSpace.doc.needRender = true;
+                        x3dom.debug.logInfo('Inline: added '+that._vf.url+' to scene.');
+                    }
+                    
                     newScene = null;
                     nameSpace = null;
                     xml = null;
