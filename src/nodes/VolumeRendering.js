@@ -182,11 +182,8 @@ x3dom.registerNodeType(
             this.addField_MFFloat(ctx, 'surfaceValues', []);
             this.addField_SFFloat(ctx, 'contourStepSize', 0);
             this.addField_SFFloat(ctx, 'surfaceTolerance', 0);
-        },
-        {
-            nodeChanged: function() {},
-            fieldChanged: function(fieldName) {}
-            
+	    
+
 	    
 	    this.vertexShader = "attribute vec3 position;"+
 		"attribute vec3 color;"+
@@ -259,7 +256,13 @@ x3dom.registerNodeType(
 		"  }"+
 		"}"+
 		"gl_FragColor = src;"+
-		"}";
+		"}";	    
+	    
+        },
+        {
+            nodeChanged: function() {},
+            fieldChanged: function(fieldName) {}
+            
         }
     )
 );
