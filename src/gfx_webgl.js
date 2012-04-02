@@ -656,7 +656,7 @@ x3dom.gfx_webgl = (function () {
 		var sphereMapping		= (shape._cf.geometry.node._cf.texCoord !== undefined && shape._cf.geometry.node._cf.texCoord.node !== null && shape._cf.geometry.node._cf.texCoord.node._vf.mode) ? (shape._cf.geometry.node._cf.texCoord.node._vf.mode.toLowerCase() == "sphere") ? 1 : 0 : 0;
 		var cubeMap				= (shape._cf.appearance.node._cf.texture.node) ? x3dom.isa(shape._cf.appearance.node._cf.texture.node, x3dom.nodeTypes.X3DEnvironmentTextureNode) ? 1 : 0 : 0;
 		var blending			= (x3dom.isa(shape._cf.geometry.node, x3dom.nodeTypes.Text) || cubeMap || (shape._cf.appearance.node._cf.texture.node && (shape._cf.appearance.node._cf.texture.node._vf.origChannelCount == 1 || shape._cf.appearance.node._cf.texture.node._vf.origChannelCount == 2))) ? 1 : 0;
-		var vertexColor 		= (shape._cf.geometry.node._mesh._colors[0].length > 0 || shape._cf.geometry.node.getColorTexture()) ? shape._cf.geometry.node._mesh._numColComponents : 0;
+		var vertexColor 		= (shape._cf.geometry.node._mesh._colors[0].length > 0 || shape._cf.geometry.node.getColorTexture() || (shape._cf.geometry.node._vf.color !== undefined && shape._cf.geometry.node._vf.color.length > 0)) ? shape._cf.geometry.node._mesh._numColComponents : 0;
 		var lights				= (viewarea.getLights().length) + (viewarea._scene.getNavigationInfo()._vf.headlight);
 		var solid				= (shape.isSolid()) ? 1 : 0;
 		var fog					= (viewarea._scene.getFog()._vf.visibilityRange > 0) ? 1 : 0;
@@ -934,10 +934,11 @@ x3dom.gfx_webgl = (function () {
 					shader += "fragColor.rgb = (emissiveColor + specular*specularColor);\n";
 					shader += "fragColor.a = 1.0 - transparency;\n";
 				} else if(vertexColor == 3) {
-					shader += "fragColor.rgb = vertColor;\n";
+				    shader += "fragColor.rgb = (emissiveColor + ambient*vertColor + diffuse*vertColor + specular*specularColor);\n";
 					shader += "fragColor.a = 1.0 - transparency;\n";
 				} else if(vertexColor == 4) {
-					shader += "fragColor.rgba = vertColor;\n";
+    				shader += "fragColor.rgb = (emissiveColor + ambient*vertColor.rgb + diffuse*vertColor.rgb + specular*specularColor);\n";
+					shader += "fragColor.a = vertColor.a;\n";
 				} else {
 					shader += "fragColor.rgb = (emissiveColor + ambient*diffuseColor + diffuse*diffuseColor + specular*specularColor);\n";
 					shader += "fragColor.a = 1.0-transparency;\n";
@@ -1071,7 +1072,7 @@ x3dom.gfx_webgl = (function () {
 		var textureTransform 	= (shape._cf.appearance.node._cf.textureTransform.node !== null) ? 1 : 0;
 		var sphereMapping		= (shape._cf.geometry.node._cf.texCoord !== undefined && shape._cf.geometry.node._cf.texCoord.node !== null && shape._cf.geometry.node._cf.texCoord.node._vf.mode) ? (shape._cf.geometry.node._cf.texCoord.node._vf.mode.toLowerCase() == "sphere") ? 1 : 0 : 0;
 		var cubeMap				= (shape._cf.appearance.node._cf.texture.node) ? x3dom.isa(shape._cf.appearance.node._cf.texture.node, x3dom.nodeTypes.X3DEnvironmentTextureNode) ? 1 : 0 : 0;
-		var vertexColor 		= (shape._cf.geometry.node._mesh._colors[0].length > 0 || shape._cf.geometry.node.getColorTexture()) ? shape._cf.geometry.node._mesh._numColComponents : 0;
+		var vertexColor 		= (shape._cf.geometry.node._mesh._colors[0].length > 0 || shape._cf.geometry.node.getColorTexture() || (shape._cf.geometry.node._vf.color !== undefined && shape._cf.geometry.node._vf.color.length > 0)) ? shape._cf.geometry.node._mesh._numColComponents : 0;
 		var lights				= (viewarea.getLights().length) + (viewarea._scene.getNavigationInfo()._vf.headlight);
 		var shadow				= (viewarea.getLightsShadow()) ? 1 : 0;
 		var fog					= (viewarea._scene.getFog()._vf.visibilityRange > 0) ? 1 : 0;
@@ -1156,7 +1157,9 @@ x3dom.gfx_webgl = (function () {
             
             if(lights || fog){
                 shader += "uniform vec3 eyePosition;\n";
-                shader += "varying vec3 fragEyePosition;\n";
+                if (fog) {
+                    shader += "varying vec3 fragEyePosition;\n";
+                }
                 shader += "varying vec3 fragPosition;\n";
                 
                 if(shadow) {
@@ -1237,7 +1240,9 @@ x3dom.gfx_webgl = (function () {
             
             if(lights || fog){    
                 shader += "fragPosition = (modelViewMatrix * vec4(vertPosition, 1.0)).xyz;\n";
-                shader += "fragEyePosition = eyePosition - fragPosition;\n";
+                if (fog) {
+                    shader += "fragEyePosition = eyePosition - fragPosition;\n";
+                }
                 if(shadow) {
                     shader += "projCoord = matPV * vec4(vertPosition+0.5*normalize(vertNormal), 1.0);\n";
                 }
@@ -1276,7 +1281,7 @@ x3dom.gfx_webgl = (function () {
 //----------------------------------------------------------------------------
     Context.prototype.generateFS = function (viewarea, shape)
     {
-		var vertexColor 		= (shape._cf.geometry.node._mesh._colors[0].length > 0 || shape._cf.geometry.node.getColorTexture()) ? shape._cf.geometry.node._mesh._numColComponents : 0;
+		var vertexColor 		= (shape._cf.geometry.node._mesh._colors[0].length > 0 || shape._cf.geometry.node.getColorTexture() || (shape._cf.geometry.node._vf.color !== undefined && shape._cf.geometry.node._vf.color.length > 0)) ? shape._cf.geometry.node._mesh._numColComponents : 0;
 		var lights				= (viewarea.getLights().length) + (viewarea._scene.getNavigationInfo()._vf.headlight);
 		var shadows				= (viewarea.getLightsShadow()) ? 1 : 0;
         var fogs				= (viewarea._scene.getFog()._vf.visibilityRange > 0) ? 1 : 0;
@@ -1450,17 +1455,14 @@ x3dom.gfx_webgl = (function () {
                 shader += "uniform float solid;             \n";
                 shader += "varying vec3 fragNormal;         \n";
                 shader += "varying vec3 fragPosition;       \n";
-                shader += "varying vec3 fragEyePosition;    \n";
                 shader += light;
                 if(shadows) {
                     shader += shadow;
                 }
             }
             if(fogs){
+                shader += "varying vec3 fragEyePosition;    \n";
                 shader += fog;
-                if(!lights){
-                    shader += "varying vec3 fragEyePosition;    \n";
-                }
             }
             
             //Set Main
@@ -1784,7 +1786,7 @@ x3dom.gfx_webgl = (function () {
             }
         }
         else if (!(x3dom.isa(shape._cf.geometry.node, x3dom.nodeTypes.Text) ||
-                   x3dom.isa(shape._cf.geometry.node, x3dom.nodeTypes.BinaryMesh)) &&
+                   x3dom.isa(shape._cf.geometry.node, x3dom.nodeTypes.BinaryGeometry)) &&
                  (!shape._cf.geometry.node || 
 				   shape._cf.geometry.node._mesh._positions[0].length < 1) ) {
             x3dom.debug.logError("NO VALID MESH OR NO VERTEX POSITIONS SET!");
@@ -1793,11 +1795,65 @@ x3dom.gfx_webgl = (function () {
         
         // we're on init, thus reset all dirty flags
         shape._dirty.positions = false;
-        shape._dirty.normals = false;
+        shape._dirty.normals   = false;
         shape._dirty.texcoords = false;
-        shape._dirty.colors = false;
-        shape._dirty.indexes = false;
-        shape._dirty.texture = false;
+        shape._dirty.colors    = false;
+        shape._dirty.indexes   = false;
+        shape._dirty.texture   = false;
+		shape._dirty.material  = false;
+        shape._dirty.shader    = false;
+        
+        
+        // dynamically attach clean-up method for GL objects
+        shape._cleanupGLObjects = function()
+        {
+            if (this._parentNodes.length === 0 && this._webgl)
+            {
+                var doc = this.findX3DDoc();
+                var gl = doc.ctx.ctx3d;
+                var sp = this._webgl.shader;
+
+                for (var cnt=0; this._webgl.texture !== undefined &&
+                                cnt < this._webgl.texture.length; cnt++)
+                {
+                    if (this._webgl.texture[cnt]) {
+                        gl.deleteTexture(this._webgl.texture[cnt]);
+                    }
+                }
+
+                for (var q=0; q<this._webgl.positions.length; q++)
+                {
+                    if (sp.position !== undefined) {
+                        gl.deleteBuffer(this._webgl.buffers[5*q+1]);
+                        gl.deleteBuffer(this._webgl.buffers[5*q+0]);
+                    }
+
+                    if (sp.normal !== undefined) {
+                        gl.deleteBuffer(this._webgl.buffers[5*q+2]);
+                    }
+
+                    if (sp.texcoord !== undefined) {
+                        gl.deleteBuffer(this._webgl.buffers[5*q+3]);
+                    }
+
+                    if (sp.color !== undefined) {
+                        gl.deleteBuffer(this._webgl.buffers[5*q+4]);
+                    }
+                }
+
+                for (var df=0; df<this._webgl.dynamicFields.length; df++)
+                {
+                    var attrib = this._webgl.dynamicFields[df];
+
+                    if (sp[attrib.name] !== undefined) {
+                        gl.deleteBuffer(attrib.buf);
+                    }
+                }
+
+                this._webgl = null;
+            }
+        };  // shape._cleanupGLObjects()
+        
         
         // TODO; finish text!
         // CANVAS only supports: font, textAlign, textBaseline, fillText, strokeText, measureText, width
@@ -1858,19 +1914,10 @@ x3dom.gfx_webgl = (function () {
                 font_spacing = fontStyleNode._vf.spacing;
                 font_horizontal = fontStyleNode._vf.horizontal;
                 font_language = fontStyleNode._vf.language;
-
             }
             
-            /* text_ctx.mozTextStyle = '48px '+font_family; */
             var string = shape._cf.geometry.node._vf.string;
-            /*
-            var text_w = 0;
-            var i = 0;
-            for (i = 0; i < string.length; ++i) {
-                text_w = Math.max(text_w, text_ctx.mozMeasureText(string[i]));
-            }
-            */
-
+            
             var text_canvas = document.createElement('canvas');
             text_canvas.dir = font_leftToRight;
             text_canvas.width  = viewarea._width;
@@ -1899,7 +1946,6 @@ x3dom.gfx_webgl = (function () {
             text_ctx.lineWidth = 2.5;
             text_ctx.strokeStyle = 'grey';
             text_ctx.textBaseline = 'top';
-//            text_ctx.save();
 
             text_ctx.font = font_style + " " + font_size + "px " + font_family;  //bold 
             text_ctx.textAlign = font_justify;
@@ -1907,22 +1953,8 @@ x3dom.gfx_webgl = (function () {
             var leftOffset = (text_ctx.canvas.width - txtW) / 2.0;
             var topOffset  = (text_ctx.canvas.height - font_size) / 2.0;
 
-            //text_ctx.strokeText(string, leftOffset, topOffset);
             text_ctx.fillText(string, leftOffset, topOffset);
-//            text_ctx.restore();
             
-            /*
-            var line_h = 1.2 * text_ctx.mozMeasureText('M'); // XXX: this is a hacky guess
-            var text_h = line_h * shape._cf.geometry.node._string.length;
-            text_canvas.width = Math.pow(2, Math.ceil(Math.log(text_w)/Math.log(2)));
-            text_canvas.height = Math.pow(2, Math.ceil(Math.log(text_h)/Math.log(2)));
-            text_ctx.fillStyle = '#000';
-            text_ctx.translate(0, line_h);
-            for (i = 0; i < string.length; ++i) {
-                text_ctx.mozDrawText(string[i]);
-                text_ctx.translate(0, line_h);
-            }
-            */
             var ids = gl.createTexture();
             gl.bindTexture(gl.TEXTURE_2D, ids);
             gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, text_canvas);
@@ -1939,20 +1971,9 @@ x3dom.gfx_webgl = (function () {
             var w = txtW/100.0; //txtW/txtH;
             var h = txtH/100.0;
             
-            // var u0 = leftOffset / text_canvas.width;
-            // var u = u0 + txtW / text_canvas.width;
-            // var v = 1 - txtH / text_canvas.height;
-            // var v0 = topOffset / text_canvas.height + v;
-            // if (u0 < 0) { u0 = 0; }
-            // if (u > 1) { u = 1; }
-            
             // prevent distortion
-            var v0 = 1;
-            var u0 = 0;
-            var u = 1;
-            var v = 0;
-
-//            x3dom.debug.logInfo(txtW + ", " + txtH + "; " + u0 + ", " + v0 + "; " + u + ", " + v);
+            var v0 = 1, u0 = 0;
+            var u = 1, v = 0;
 
             shape._cf.geometry.node._mesh._positions[0] = [-w,-h,0, w,-h,0, w,h,0, -w,h,0];
             shape._cf.geometry.node._mesh._normals[0] = [0,0,1, 0,0,1, 0,0,1, 0,0,1];
@@ -2156,6 +2177,8 @@ x3dom.gfx_webgl = (function () {
                 }
                 else
                 {
+                    var t00 = new Date().getTime();
+                    
                     texture = gl.createTexture();
 					
 					//Old Loading
@@ -2180,7 +2203,7 @@ x3dom.gfx_webgl = (function () {
                         
 						that._webgl.texture[unit] = texture;
 						
-						if(saveSize == "coord") {
+						if (saveSize == "coord") {
 							that._webgl.coordTextureWidth  = image.width;
 							that._webgl.coordTextureHeight = image.height;
 						} else if(saveSize == "index"){
@@ -2191,12 +2214,10 @@ x3dom.gfx_webgl = (function () {
 						if (saveSize == "index" || saveSize == "coord" || saveSize == "normal" || 
 						    saveSize == "texCoord" ||saveSize == "color") {
 							that._webgl.textureFilter[unit] = gl.NEAREST;
-						}else{
+						} else{
 							that._webgl.textureFilter[unit] = gl.LINEAR;
 						}
 						
-                        x3dom.debug.logInfo(texture + " bind tex url: " + tex._vf.url + "at unit: " + unit);
-
                         gl.bindTexture(gl.TEXTURE_2D, texture);
                         gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
                         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, that._webgl.textureFilter[unit]);
@@ -2206,6 +2227,10 @@ x3dom.gfx_webgl = (function () {
                         gl.bindTexture(gl.TEXTURE_2D, null);
 						
 						tex._complete = true;
+						
+                        var t11 = new Date().getTime() - t00;
+                        x3dom.debug.logInfo(texture + " bound tex url " + tex._vf.url + " at unit " + unit +
+                                            " with img load time " + t11 + " ms.");
                     };
 
                     image.onerror = function()
@@ -2240,7 +2265,8 @@ x3dom.gfx_webgl = (function () {
                 //buffers: [{},{},{},{},{}],
                 lightsAndShadow: useLightingFunc(viewarea),
 				imageGeometry: numCoordinateTextures,
-				indexedImageGeometry: indexed
+				indexedImageGeometry: indexed,
+				indexLength: 0  // only for binary data via XHR
             };
             
             if (tex) {
@@ -2281,7 +2307,8 @@ x3dom.gfx_webgl = (function () {
             
             
             if (x3dom.isa(shape._cf.geometry.node, x3dom.nodeTypes.PointSet) || 
-				x3dom.isa(shape._cf.geometry.node, x3dom.nodeTypes.Polypoint2D)) {
+				x3dom.isa(shape._cf.geometry.node, x3dom.nodeTypes.Polypoint2D)) 
+			{
                 shape._webgl.primType = gl.POINTS;
                 
                 //TODO; remove these hacky thousands of shaders!!!
@@ -2310,9 +2337,10 @@ x3dom.gfx_webgl = (function () {
                                           ['vs-x3d-default', 'fs-x3d-default']);
                 }
             }
-            else {
+            else 
+            {
                 //TODO; also account for other cases such as LineSet
-				if( x3dom.isa(shape._cf.geometry.node, x3dom.nodeTypes.ImageGeometry) ) {
+				if ( x3dom.isa(shape._cf.geometry.node, x3dom.nodeTypes.ImageGeometry) ) {
 					shape._webgl.primType = [];
 					for(var i=0; i<shape._cf.geometry.node._vf.primType.length; i++) {				
 						if(shape._cf.geometry.node._vf.primType[i].toUpperCase() == 'POINTS') {
@@ -2324,27 +2352,23 @@ x3dom.gfx_webgl = (function () {
 						}
 					}
 				} else if(x3dom.isa(shape._cf.geometry.node, x3dom.nodeTypes.IndexedTriangleStripSet) &&  
-									shape._cf.geometry.node._mesh._primType == 'TRIANGLE_STRIP') {
+				          shape._cf.geometry.node._mesh._primType.toUpperCase() == 'TRIANGLESTRIP') {
 					shape._webgl.primType = gl.TRIANGLE_STRIP;
-					/*shape._webgl.primType = [];
-					for(var i=0; i < 2; i++) {									
-						shape._webgl.primType.push(gl.TRIANGLE_STRIP);	
-					}*/
 				} else {
 					shape._webgl.primType = gl.TRIANGLES;
 				}
                 
                 /** SHADER HACK (TODO: MAKE BETTER!) */
                 if (shape._cf.appearance.node._shader !== null) {
-                    if(x3dom.isa(shape._cf.appearance.node._shader, x3dom.nodeTypes.CommonSurfaceShader)){
+                    if(x3dom.isa(shape._cf.appearance.node._shader, x3dom.nodeTypes.CommonSurfaceShader)) {
                         
                         var texCnt = 0;
                         var cssMode = 0; //Bit coded CSS Modes - 1.Bit > Diffuse, 2.Bit > Normal, 3.Bit > Specular
                         var cssShader = shape._cf.appearance.node._shader;
                         
-                        var diffuseTex   = cssShader.getDiffuseMap();
-                        var normalTex    = cssShader.getNormalMap(); 
-                        var specularTex  = cssShader.getSpecularMap(); 
+                        var diffuseTex  = cssShader.getDiffuseMap();
+                        var normalTex   = cssShader.getNormalMap(); 
+                        var specularTex = cssShader.getSpecularMap(); 
                         
                         if(diffuseTex != null){
                             shape.updateTexture(diffuseTex, texCnt++, "false");
@@ -2361,8 +2385,8 @@ x3dom.gfx_webgl = (function () {
 						}
 						shape._webgl.shader = this.getShaderProgram(gl, [this.generateVS(viewarea, shape), 
                                                                     this.generateFS(viewarea, shape)]);
-						
-                    }else{
+                    }
+                    else {
                         //FIXME; HACK
                         var hackID = 'HACK'+shape._objectID;
                         g_shaders['vs-x3d-'+hackID] = {};
@@ -2372,10 +2396,10 @@ x3dom.gfx_webgl = (function () {
                         g_shaders['fs-x3d-'+hackID].type = "fragment";
                         g_shaders['fs-x3d-'+hackID].data = shape._cf.appearance.node._shader._fragment._vf.url[0];
                         shape._webgl.shader = getDefaultShaderProgram(gl, hackID);
-						shape._dirty.shader = false;
                         //END OF HACK
                     }
-                } else {
+                } 
+                else {
 					if(x3dom.caps.MOBILE) {
 						shape._webgl.shader = this.getShaderProgram(gl, [this.generateVSMobile(viewarea, shape), 
                                                                     this.generateFSMobile(viewarea, shape)]);
@@ -2387,284 +2411,353 @@ x3dom.gfx_webgl = (function () {
             }
         }
 		
-		//TODO find right place
-		shape._dirty.shader = false;
-		
-		
+		// init vertex attribs
         var sp = shape._webgl.shader;
         var currAttribs = 0;
         
         shape._webgl.buffers = [];
         shape._webgl.dynamicFields = [];
         
-        if (x3dom.isa(shape._cf.geometry.node, x3dom.nodeTypes.BinaryMesh)) 
+        // BinaryGeometry needs special handling
+        if (x3dom.isa(shape._cf.geometry.node, x3dom.nodeTypes.BinaryGeometry)) 
         {
-            if (shape._cf.geometry.node._vf.primType.toUpperCase() == 'TRIANGLESTRIP') {
-				shape._webgl.primType = gl.TRIANGLE_STRIP;
-			} 
-			else {
-				shape._webgl.primType = gl.TRIANGLES;
-			}
-			// workaround
-			shape._cf.geometry.node._mesh._numTexComponents = 2;
-			
             var t00 = new Date().getTime();
             
-            var xmlhttp0 = new XMLHttpRequest();
-            xmlhttp0.open("GET", encodeURI(shape._nameSpace.getURL(
-                                    shape._cf.geometry.node._vf.index)) , true);
-            xmlhttp0.responseType = "arraybuffer";
+            shape._webgl.primType = [];
             
-            shape._nameSpace.doc.downloadCount += 1;
-            
-            xmlhttp0.onload = function() 
+			for (var primCnt=0; primCnt<shape._cf.geometry.node._vf.primType.length; ++primCnt) 
+			{
+			    switch(shape._cf.geometry.node._vf.primType[primCnt].toUpperCase())
+			    {
+			        case 'POINTS':
+			            shape._webgl.primType.push(gl.POINTS);
+			            break;
+			        case 'TRIANGLESTRIP':
+			            shape._webgl.primType.push(gl.TRIANGLE_STRIP);
+			            break;
+			        case 'TRIANGLES':
+			        default:
+			            shape._webgl.primType.push(gl.TRIANGLES);
+			            break;
+			    }
+			}
+			
+            // index
+            if (shape._cf.geometry.node._vf.index.length > 0)
             {
-               var XHR_buffer = xmlhttp0.response;
-               
-               var indicesBuffer = gl.createBuffer();
-               shape._webgl.buffers[0] = indicesBuffer;
+                var xmlhttp0 = new XMLHttpRequest();
+                xmlhttp0.open("GET", encodeURI(shape._nameSpace.getURL(
+                                        shape._cf.geometry.node._vf.index)) , true);
+                xmlhttp0.responseType = "arraybuffer";
+            
+                shape._nameSpace.doc.downloadCount += 1;
+            
+                xmlhttp0.send(null);
+            
+                xmlhttp0.onload = function() 
+                {
+                    var XHR_buffer = xmlhttp0.response;
 
-               var indexArray = new Uint16Array(XHR_buffer);
+                    var indicesBuffer = gl.createBuffer();
+                    shape._webgl.buffers[0] = indicesBuffer;
 
-               gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indicesBuffer);
-               gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, indexArray, gl.STATIC_DRAW);
-               
-               // Test reading Data
-               //x3dom.debug.logWarning("arraybuffer[0]="+indexArray[0]);
-               
-               shape._webgl.indexLength = indexArray.length;    // FIXME
-               shape._cf.geometry.node._mesh._numFaces = indexArray.length / 3;
-               
-               indexArray = null;
-               
-               shape._nameSpace.doc.downloadCount -= 1;
-               shape._nameSpace.doc.needRender = true;
-               
-               var t11 = new Date().getTime() - t00;   
-               x3dom.debug.logWarning("XHR0 load time: " + t11 + " ms"); 
+                    var indexArray = new Uint16Array(XHR_buffer);
+
+                    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indicesBuffer);
+                    gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, indexArray, gl.STATIC_DRAW);
+
+                    // Test reading Data
+                    //x3dom.debug.logWarning("arraybuffer[0]="+indexArray[0]);
+
+                    shape._webgl.indexLength = indexArray.length;
+                    if (shape._webgl.primType[0] == gl.TRIANGLE_STRIP)
+                        shape._cf.geometry.node._mesh._numFaces = indexArray.length - 2;
+                    else
+                        shape._cf.geometry.node._mesh._numFaces = indexArray.length / 3;
+
+                    indexArray = null;
+
+                    shape._nameSpace.doc.downloadCount -= 1;
+                    shape._nameSpace.doc.needRender = true;
+
+                    var t11 = new Date().getTime() - t00;   
+                    x3dom.debug.logInfo("XHR0/ index load time: " + t11 + " ms"); 
+                };
             }
             
-            xmlhttp0.send(null);
-            
-            var xmlhttp1 = new XMLHttpRequest();
-            xmlhttp1.open("GET", encodeURI(shape._nameSpace.getURL(
-                                    shape._cf.geometry.node._vf.position)) , true);
-            xmlhttp1.responseType = "arraybuffer";
-            
-            shape._nameSpace.doc.downloadCount += 1;
-            
-            xmlhttp1.onload = function() 
+            // coord
+            if (shape._cf.geometry.node._vf.coord.length > 0)
             {
-               var XHR_buffer = xmlhttp1.response;
-               
-               positionBuffer = gl.createBuffer();
-               shape._webgl.buffers[1] = positionBuffer;
-               gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);               
-               
-               var vertices = new Float32Array(XHR_buffer);
-               
-               gl.bufferData(gl.ARRAY_BUFFER, vertices, gl.STATIC_DRAW);
-               gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
-               
-               gl.vertexAttribPointer(sp.position, 3, gl.FLOAT, false, 0, 0);
-               gl.enableVertexAttribArray(sp.position);
-               
-               // Test reading Data
-               //x3dom.debug.logWarning("arraybuffer[0].vx="+vertices[0]);  
-               
-               shape._cf.geometry.node._mesh._numCoords = vertices.length / 3;
-               
-               vertices = null;
-               
-               shape._nameSpace.doc.downloadCount -= 1;
-               shape._nameSpace.doc.needRender = true;
-               
-               var t11 = new Date().getTime() - t00;   
-               x3dom.debug.logWarning("XHR1 load time: " + t11 + " ms"); 
+                var xmlhttp1 = new XMLHttpRequest();
+                xmlhttp1.open("GET", encodeURI(shape._nameSpace.getURL(
+                                        shape._cf.geometry.node._vf.coord)) , true);
+                xmlhttp1.responseType = "arraybuffer";
+            
+                shape._nameSpace.doc.downloadCount += 1;
+            
+                xmlhttp1.send(null);
+            
+                xmlhttp1.onload = function() 
+                {
+                    var XHR_buffer = xmlhttp1.response;
+
+                    positionBuffer = gl.createBuffer();
+                    shape._webgl.buffers[1] = positionBuffer;
+                    gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);               
+
+                    var vertices = new Float32Array(XHR_buffer);
+
+                    gl.bufferData(gl.ARRAY_BUFFER, vertices, gl.STATIC_DRAW);
+                    gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
+
+                    gl.vertexAttribPointer(sp.position, 3, gl.FLOAT, false, 0, 0);
+                    gl.enableVertexAttribArray(sp.position);
+
+                    // Test reading Data
+                    //x3dom.debug.logWarning("arraybuffer[0].vx="+vertices[0]);  
+
+                    var geoNode = shape._cf.geometry.node;
+                    if (geoNode._mesh._numCoords <= 0) {
+                        geoNode._mesh._numCoords = vertices.length / 3;
+                        geoNode._vf.vertexCount[0] = geoNode._mesh._numCoords;
+                    }
+
+                    vertices = null;
+
+                    shape._nameSpace.doc.downloadCount -= 1;
+                    shape._nameSpace.doc.needRender = true;
+
+                    var t11 = new Date().getTime() - t00;   
+                    x3dom.debug.logInfo("XHR1/ coord load time: " + t11 + " ms"); 
+                };
             }
             
-            xmlhttp1.send(null);
-            
-            var xmlhttp2 = new XMLHttpRequest();
-            xmlhttp2.open("GET", encodeURI(shape._nameSpace.getURL(
-                                    shape._cf.geometry.node._vf.normal)) , true);
-            xmlhttp2.responseType = "arraybuffer";
-            
-            shape._nameSpace.doc.downloadCount += 1;
-            
-            xmlhttp2.onload = function() 
+            // normal
+            if (shape._cf.geometry.node._vf.normal.length > 0)
             {
-               var XHR_buffer = xmlhttp2.response;
-               
-               var normalBuffer = gl.createBuffer();
-               shape._webgl.buffers[2] = normalBuffer;
+                var xmlhttp2 = new XMLHttpRequest();
+                xmlhttp2.open("GET", encodeURI(shape._nameSpace.getURL(
+                                        shape._cf.geometry.node._vf.normal)) , true);
+                xmlhttp2.responseType = "arraybuffer";
+            
+                shape._nameSpace.doc.downloadCount += 1;
+            
+                xmlhttp2.send(null);
+            
+                xmlhttp2.onload = function() 
+                {
+                    var XHR_buffer = xmlhttp2.response;
 
-               var normals = new Float32Array(XHR_buffer);
+                    var normalBuffer = gl.createBuffer();
+                    shape._webgl.buffers[2] = normalBuffer;
 
-               gl.bindBuffer(gl.ARRAY_BUFFER, normalBuffer);
-               gl.bufferData(gl.ARRAY_BUFFER, normals, gl.STATIC_DRAW);                
+                    var normals = new Float32Array(XHR_buffer);
 
-               gl.vertexAttribPointer(sp.normal, 3, gl.FLOAT, false, 0, 0); 
-               gl.enableVertexAttribArray(sp.normal);
+                    gl.bindBuffer(gl.ARRAY_BUFFER, normalBuffer);
+                    gl.bufferData(gl.ARRAY_BUFFER, normals, gl.STATIC_DRAW);                
 
-               // Test reading Data
-               //x3dom.debug.logWarning("arraybuffer[0].nx="+normals[0]);  
-               
-               normals = null;
-               
-               shape._nameSpace.doc.downloadCount -= 1;
-               shape._nameSpace.doc.needRender = true;
-               
-               var t11 = new Date().getTime() - t00;   
-               x3dom.debug.logWarning("XHR2 load time: " + t11 + " ms"); 
+                    gl.vertexAttribPointer(sp.normal, 3, gl.FLOAT, false, 0, 0); 
+                    gl.enableVertexAttribArray(sp.normal);
+
+                    // Test reading Data
+                    //x3dom.debug.logWarning("arraybuffer[0].nx="+normals[0]);  
+
+                    normals = null;
+
+                    shape._nameSpace.doc.downloadCount -= 1;
+                    shape._nameSpace.doc.needRender = true;
+
+                    var t11 = new Date().getTime() - t00;   
+                    x3dom.debug.logInfo("XHR2/ normal load time: " + t11 + " ms");
+                };
             }
             
-            xmlhttp2.send(null);
-            
-            var xmlhttp3 = new XMLHttpRequest();
-            xmlhttp3.open("GET", encodeURI(shape._nameSpace.getURL(
-                                    shape._cf.geometry.node._vf.texcoord)) , true);
-            xmlhttp3.responseType = "arraybuffer";
-            
-            shape._nameSpace.doc.downloadCount += 1;
-            
-            xmlhttp3.onload = function() 
+            // texCoord
+            if (shape._cf.geometry.node._vf.texCoord.length > 0)
             {
-               var XHR_buffer = xmlhttp3.response;
-               
-               var texcBuffer = gl.createBuffer();
-               shape._webgl.buffers[3] = texcBuffer;
-
-               var texCoords = new Float32Array(XHR_buffer);
-
-               gl.bindBuffer(gl.ARRAY_BUFFER, texcBuffer);
-               gl.bufferData(gl.ARRAY_BUFFER, texCoords, gl.STATIC_DRAW);
-
-               gl.vertexAttribPointer(sp.texcoord, 2, gl.FLOAT, false, 0, 0); 
-               gl.enableVertexAttribArray(sp.texcoord);
-
-               // Test reading Data
-               //x3dom.debug.logWarning("arraybuffer[0].tx="+texCoords[0]);  
-               
-               texCoords = null;
-               
-               shape._nameSpace.doc.downloadCount -= 1;
-               shape._nameSpace.doc.needRender = true;
-               
-               var t11 = new Date().getTime() - t00;   
-               x3dom.debug.logWarning("XHR3 load time: " + t11 + " ms"); 
-            }
+                var xmlhttp3 = new XMLHttpRequest();
+                xmlhttp3.open("GET", encodeURI(shape._nameSpace.getURL(
+                                        shape._cf.geometry.node._vf.texCoord)) , true);
+                xmlhttp3.responseType = "arraybuffer";
             
-            xmlhttp3.send(null);
+                shape._nameSpace.doc.downloadCount += 1;
+            
+                xmlhttp3.send(null);
+            
+                xmlhttp3.onload = function() 
+                {
+                    var XHR_buffer = xmlhttp3.response;
+
+                    var texcBuffer = gl.createBuffer();
+                    shape._webgl.buffers[3] = texcBuffer;
+
+                    var texCoords = new Float32Array(XHR_buffer);
+
+                    gl.bindBuffer(gl.ARRAY_BUFFER, texcBuffer);
+                    gl.bufferData(gl.ARRAY_BUFFER, texCoords, gl.STATIC_DRAW);
+
+                    gl.vertexAttribPointer(sp.texcoord, 2, gl.FLOAT, false, 0, 0); 
+                    gl.enableVertexAttribArray(sp.texcoord);
+
+                    // Test reading Data
+                    //x3dom.debug.logWarning("arraybuffer[0].tx="+texCoords[0]);  
+
+                    texCoords = null;
+
+                    shape._nameSpace.doc.downloadCount -= 1;
+                    shape._nameSpace.doc.needRender = true;
+
+                    var t11 = new Date().getTime() - t00;   
+                    x3dom.debug.logInfo("XHR3/ texCoord load time: " + t11 + " ms"); 
+                };
+            }
           
-            // TODO: color
-        }
-        else // No BinaryMesh -- FIXME
-        {
-            
-        for (q=0; q<shape._webgl.positions.length; q++)
-        {
-          if (sp.position !== undefined) 
-          {
-            // bind indices for drawElements() call
-            var indicesBuffer = gl.createBuffer();
-            shape._webgl.buffers[5*q+0] = indicesBuffer;
-            
-            var indexArray = new Uint16Array(shape._webgl.indexes[q]);
-            
-            gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indicesBuffer);
-            gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, indexArray, gl.STATIC_DRAW);
-            
-            indexArray = null;
-            
-            positionBuffer = gl.createBuffer();
-            shape._webgl.buffers[5*q+1] = positionBuffer;
-            gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
-            
-            vertices = new Float32Array(shape._webgl.positions[q]);
-            
-            gl.bufferData(gl.ARRAY_BUFFER, vertices, gl.STATIC_DRAW);
-            gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
-            
-            gl.vertexAttribPointer(sp.position, 3, gl.FLOAT, false, 0, 0);
-            gl.enableVertexAttribArray(sp.position);
-
-            vertices = null;
-          }
-          if (sp.normal !== undefined) 
-          {
-            var normalBuffer = gl.createBuffer();
-            shape._webgl.buffers[5*q+2] = normalBuffer;
-            
-            var normals = new Float32Array(shape._webgl.normals[q]);
-            
-            gl.bindBuffer(gl.ARRAY_BUFFER, normalBuffer);
-            gl.bufferData(gl.ARRAY_BUFFER, normals, gl.STATIC_DRAW);                
-            
-            gl.vertexAttribPointer(sp.normal, 3, gl.FLOAT, false, 0, 0); 
-            gl.enableVertexAttribArray(sp.normal);
-
-            normals = null;
-          }
-          if (sp.texcoord !== undefined)
-          {
-            var texcBuffer = gl.createBuffer();
-            shape._webgl.buffers[5*q+3] = texcBuffer;
-            
-            var texCoords = new Float32Array(shape._webgl.texcoords[q]);
-            
-            gl.bindBuffer(gl.ARRAY_BUFFER, texcBuffer);
-            gl.bufferData(gl.ARRAY_BUFFER, texCoords, gl.STATIC_DRAW);
-            
-            gl.vertexAttribPointer(sp.texcoord, 
-                shape._cf.geometry.node._mesh._numTexComponents, gl.FLOAT, false, 0, 0); 
-            gl.enableVertexAttribArray(sp.texcoord);
-                
-            texCoords = null;
-          }
-          if (sp.color !== undefined)
-          {
-            colorBuffer = gl.createBuffer();
-            shape._webgl.buffers[5*q+4] = colorBuffer;
-            
-            colors = new Float32Array(shape._webgl.colors[q]);
-
-            gl.bindBuffer(gl.ARRAY_BUFFER, colorBuffer);
-            gl.bufferData(gl.ARRAY_BUFFER, colors, gl.STATIC_DRAW);             
-            
-            gl.vertexAttribPointer(sp.color, 
-                shape._cf.geometry.node._mesh._numColComponents, gl.FLOAT, false, 0, 0); 
-            gl.enableVertexAttribArray(sp.color);
-                
-            colors = null;
-          }
-        }
-        
-        // TODO; FIXME; what if geometry with split mesh has dynamic fields?
-        for (var df in shape._cf.geometry.node._mesh._dynamicFields)
-        {
-            var attrib = shape._cf.geometry.node._mesh._dynamicFields[df];
-            
-            shape._webgl.dynamicFields[currAttribs] = {
-                  buf: {}, name: df, numComponents: attrib.numComponents };
-            
-            if (sp[df] !== undefined)
+            // color
+            if (shape._cf.geometry.node._vf.color.length > 0)
             {
-                var attribBuffer = gl.createBuffer();
-                shape._webgl.dynamicFields[currAttribs++].buf = attribBuffer;
-                
-                var attribs = new Float32Array(attrib.value);
-                
-                gl.bindBuffer(gl.ARRAY_BUFFER, attribBuffer);
-                gl.bufferData(gl.ARRAY_BUFFER, attribs, gl.STATIC_DRAW);                
-                
-                gl.vertexAttribPointer(sp[df], attrib.numComponents, gl.FLOAT, false, 0, 0); 
+                var xmlhttp4 = new XMLHttpRequest();
+                xmlhttp4.open("GET", encodeURI(shape._nameSpace.getURL(
+                                        shape._cf.geometry.node._vf.color)) , true);
+                xmlhttp4.responseType = "arraybuffer";
+            
+                shape._nameSpace.doc.downloadCount += 1;
+            
+                xmlhttp4.send(null);
+            
+                xmlhttp4.onload = function() 
+                {
+                    var XHR_buffer = xmlhttp4.response;
 
-                attribs = null;
+                    var colorBuffer = gl.createBuffer();
+                    shape._webgl.buffers[4] = colorBuffer;
+
+                    var colors = new Float32Array(XHR_buffer);
+
+                    gl.bindBuffer(gl.ARRAY_BUFFER, colorBuffer);
+                    gl.bufferData(gl.ARRAY_BUFFER, colors, gl.STATIC_DRAW);             
+
+                    gl.vertexAttribPointer(sp.color, 3, gl.FLOAT, false, 0, 0); 
+                    gl.enableVertexAttribArray(sp.color);
+
+                    // Test reading Data
+                    //x3dom.debug.logWarning("arraybuffer[0].cx="+colors[0]);  
+
+                    colors = null;
+
+                    shape._nameSpace.doc.downloadCount -= 1;
+                    shape._nameSpace.doc.needRender = true;
+
+                    var t11 = new Date().getTime() - t00;   
+                    x3dom.debug.logInfo("XHR4/ color load time: " + t11 + " ms");
+                };
             }
         }
+        else // No BinaryGeometry -- TODO: FIXME clean-up
+        {
+            
+            for (q=0; q<shape._webgl.positions.length; q++)
+            {
+              if (sp.position !== undefined) 
+              {
+                // bind indices for drawElements() call
+                var indicesBuffer = gl.createBuffer();
+                shape._webgl.buffers[5*q+0] = indicesBuffer;
+            
+                var indexArray = new Uint16Array(shape._webgl.indexes[q]);
+            
+                gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indicesBuffer);
+                gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, indexArray, gl.STATIC_DRAW);
+            
+                indexArray = null;
+            
+                positionBuffer = gl.createBuffer();
+                shape._webgl.buffers[5*q+1] = positionBuffer;
+                gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
+            
+                vertices = new Float32Array(shape._webgl.positions[q]);
+            
+                gl.bufferData(gl.ARRAY_BUFFER, vertices, gl.STATIC_DRAW);
+                gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
+            
+                gl.vertexAttribPointer(sp.position, 3, gl.FLOAT, false, 0, 0);
+                gl.enableVertexAttribArray(sp.position);
+
+                vertices = null;
+              }
+              if (sp.normal !== undefined) 
+              {
+                var normalBuffer = gl.createBuffer();
+                shape._webgl.buffers[5*q+2] = normalBuffer;
+            
+                var normals = new Float32Array(shape._webgl.normals[q]);
+            
+                gl.bindBuffer(gl.ARRAY_BUFFER, normalBuffer);
+                gl.bufferData(gl.ARRAY_BUFFER, normals, gl.STATIC_DRAW);                
+            
+                gl.vertexAttribPointer(sp.normal, 3, gl.FLOAT, false, 0, 0); 
+                gl.enableVertexAttribArray(sp.normal);
+
+                normals = null;
+              }
+              if (sp.texcoord !== undefined)
+              {
+                var texcBuffer = gl.createBuffer();
+                shape._webgl.buffers[5*q+3] = texcBuffer;
+            
+                var texCoords = new Float32Array(shape._webgl.texcoords[q]);
+            
+                gl.bindBuffer(gl.ARRAY_BUFFER, texcBuffer);
+                gl.bufferData(gl.ARRAY_BUFFER, texCoords, gl.STATIC_DRAW);
+            
+                gl.vertexAttribPointer(sp.texcoord, 
+                    shape._cf.geometry.node._mesh._numTexComponents, gl.FLOAT, false, 0, 0); 
+                gl.enableVertexAttribArray(sp.texcoord);
+                
+                texCoords = null;
+              }
+              if (sp.color !== undefined)
+              {
+                var colorBuffer = gl.createBuffer();
+                shape._webgl.buffers[5*q+4] = colorBuffer;
+            
+                var colors = new Float32Array(shape._webgl.colors[q]);
+
+                gl.bindBuffer(gl.ARRAY_BUFFER, colorBuffer);
+                gl.bufferData(gl.ARRAY_BUFFER, colors, gl.STATIC_DRAW);             
+            
+                gl.vertexAttribPointer(sp.color, 
+                    shape._cf.geometry.node._mesh._numColComponents, gl.FLOAT, false, 0, 0); 
+                gl.enableVertexAttribArray(sp.color);
+                
+                colors = null;
+              }
+            }
         
-        } // No BinaryMesh -- FIXME
+            // TODO; FIXME; what if geometry with split mesh has dynamic fields?
+            for (var df in shape._cf.geometry.node._mesh._dynamicFields)
+            {
+                var attrib = shape._cf.geometry.node._mesh._dynamicFields[df];
+            
+                shape._webgl.dynamicFields[currAttribs] = {
+                      buf: {}, name: df, numComponents: attrib.numComponents };
+            
+                if (sp[df] !== undefined)
+                {
+                    var attribBuffer = gl.createBuffer();
+                    shape._webgl.dynamicFields[currAttribs++].buf = attribBuffer;
+                
+                    var attribs = new Float32Array(attrib.value);
+                
+                    gl.bindBuffer(gl.ARRAY_BUFFER, attribBuffer);
+                    gl.bufferData(gl.ARRAY_BUFFER, attribs, gl.STATIC_DRAW);                
+                
+                    gl.vertexAttribPointer(sp[df], attrib.numComponents, gl.FLOAT, false, 0, 0); 
+
+                    attribs = null;
+                }
+            }
+            
+        } // No BinaryGeometry -- FIXME
         
         shape._webgl._minFilterDic = {
              NEAREST:                      gl.NEAREST                ,
@@ -3226,12 +3319,23 @@ x3dom.gfx_webgl = (function () {
                 
                 try {
                     if (shape._webgl.indexes && shape._webgl.indexes[q]) {
-						if(shape._webgl.imageGeometry) {
-							for(var v=0, offset=0; v<shape._cf.geometry.node._vf.vertexCount.length; v++) {
+						if (shape._webgl.imageGeometry) {
+							for (var v=0, offset=0; v<shape._cf.geometry.node._vf.vertexCount.length; v++) {
 								gl.drawArrays(shape._webgl.primType[v], offset, shape._cf.geometry.node._vf.vertexCount[v]);
 								offset += shape._cf.geometry.node._vf.vertexCount[v];
 							}
-						} else {
+						}
+						else if (x3dom.isa(shape._cf.geometry.node, x3dom.nodeTypes.BinaryGeometry)) {
+						    gl.drawElements(shape._webgl.primType[0], shape._webgl.indexLength, gl.UNSIGNED_SHORT, 0);
+						}
+    					else if (x3dom.isa(shape._cf.geometry.node, x3dom.nodeTypes.IndexedTriangleStripSet) &&
+    					         shape._webgl.primType == gl.TRIANGLE_STRIP) {  // TODO; remove 2nd check
+        				    var indOff = shape._cf.geometry.node._indexOffset;
+        				    for (var io=1; io<indOff.length; io++) {
+             					gl.drawElements(gl.TRIANGLE_STRIP, indOff[io]-indOff[io-1], gl.UNSIGNED_SHORT, 2*indOff[io-1]);
+             				}
+        				}
+						else {
 							gl.drawElements(shape._webgl.primType, shape._webgl.indexes[q].length, gl.UNSIGNED_SHORT, 0);
 						}
                     }
@@ -3304,7 +3408,7 @@ x3dom.gfx_webgl = (function () {
 			
 			sp.imageGeometry = 0.0;
 			
-			if(shape._webgl.imageGeometry)
+			if(shape._webgl.imageGeometry)  // FIXME: mobile errors
 			{
 				sp.imageGeometry    		= 1.0;
 				sp.IG_bboxMin 				= shape._cf.geometry.node.getMin().toGL();
@@ -3393,12 +3497,23 @@ x3dom.gfx_webgl = (function () {
 				
 				try {
 					if (shape._webgl.indexes && shape._webgl.indexes[q]) {
-						if(shape._webgl.imageGeometry) {
-							for(var v=0, offset=0; v<shape._cf.geometry.node._vf.vertexCount.length; v++) {
+						if (shape._webgl.imageGeometry) {
+							for (var v=0, offset=0; v<shape._cf.geometry.node._vf.vertexCount.length; v++) {
 								gl.drawArrays(shape._webgl.primType[v], offset, shape._cf.geometry.node._vf.vertexCount[v]);
 								offset += shape._cf.geometry.node._vf.vertexCount[v];
 							}
-						} else {
+						}
+    					else if (x3dom.isa(shape._cf.geometry.node, x3dom.nodeTypes.BinaryGeometry)) {
+    						gl.drawElements(shape._webgl.primType[0], shape._webgl.indexLength, gl.UNSIGNED_SHORT, 0);
+    					} 
+    					else if (x3dom.isa(shape._cf.geometry.node, x3dom.nodeTypes.IndexedTriangleStripSet) &&
+    					         shape._webgl.primType == gl.TRIANGLE_STRIP) {  // TODO; remove 2nd check
+        				    var indOff = shape._cf.geometry.node._indexOffset;
+        				    for (var io=1; io<indOff.length; io++) {
+             					gl.drawElements(gl.TRIANGLE_STRIP, indOff[io]-indOff[io-1], gl.UNSIGNED_SHORT, 2*indOff[io-1]);
+             				}
+        				}
+						else {
 							gl.drawElements(shape._webgl.primType, shape._webgl.indexes[q].length, gl.UNSIGNED_SHORT, 0);
 						}
 					}
@@ -3943,36 +4058,44 @@ x3dom.gfx_webgl = (function () {
             // render object
             try {
               // fixme; viewarea._points is dynamic and doesn't belong there!!!
-              if (viewarea._points !== undefined && viewarea._points) {
-				if(shape._webgl.imageGeometry) {
-					for(var i=0, offset=0; i<shape._cf.geometry.node._vf.vertexCount.length; i++) {
-						gl.drawArrays(gl.POINTS, offset, shape._cf.geometry.node._vf.vertexCount[i]);
+              if (viewarea._points !== undefined && viewarea._points > 0) {
+                var polyMode = (viewarea._points == 1) ? gl.POINTS : gl.LINES;  // FIXME
+                
+				if (shape._webgl.imageGeometry) {
+					for (var i=0, offset=0; i<shape._cf.geometry.node._vf.vertexCount.length; i++) {
+						gl.drawArrays(polyMode, offset, shape._cf.geometry.node._vf.vertexCount[i]);
 						offset += shape._cf.geometry.node._vf.vertexCount[i];
 					}
-				} else {
-					gl.drawElements(gl.POINTS, shape._webgl.indexes[q].length, gl.UNSIGNED_SHORT, 0);
+				}    
+				else if (x3dom.isa(shape._cf.geometry.node, x3dom.nodeTypes.BinaryGeometry)) {
+					gl.drawElements(polyMode, shape._webgl.indexLength, gl.UNSIGNED_SHORT, 0);
+				}
+				else {
+					gl.drawElements(polyMode, shape._webgl.indexes[q].length, gl.UNSIGNED_SHORT, 0);
 				}
               }
               else {
                 if (shape._webgl.primType == gl.POINTS) {
-					if(shape._webgl.imageGeometry) {
-					    // FIXME: still required? Seems to be handled below anyway...
-						gl.drawArrays(gl.POINTS, 0, shape._cf.geometry.node._vf.vertexCount[0]);
-					}else{
-						gl.drawArrays(gl.POINTS, 0, shape._webgl.positions[q].length/3);
-					}
+					gl.drawArrays(gl.POINTS, 0, shape._webgl.positions[q].length/3);
                 }
                 else {
                     if (shape._webgl.indexes && shape._webgl.indexes[q]) {
-						if(shape._webgl.imageGeometry) {
-							for(var i=0, offset=0; i<shape._cf.geometry.node._vf.vertexCount.length; i++) {
+						if (shape._webgl.imageGeometry) {
+							for (var i=0, offset=0; i<shape._cf.geometry.node._vf.vertexCount.length; i++) {
 								gl.drawArrays(shape._webgl.primType[i], offset, shape._cf.geometry.node._vf.vertexCount[i]);
 								offset += shape._cf.geometry.node._vf.vertexCount[i];
 							}
 						}
-						else if (x3dom.isa(shape._cf.geometry.node, x3dom.nodeTypes.BinaryMesh)) {
-						    gl.drawElements(shape._webgl.primType, shape._webgl.indexLength, gl.UNSIGNED_SHORT, 0);
-						}
+    					else if (x3dom.isa(shape._cf.geometry.node, x3dom.nodeTypes.BinaryGeometry)) {
+    						gl.drawElements(shape._webgl.primType[0], shape._webgl.indexLength, gl.UNSIGNED_SHORT, 0);
+    					}
+    					else if (x3dom.isa(shape._cf.geometry.node, x3dom.nodeTypes.IndexedTriangleStripSet) &&
+    					         shape._webgl.primType == gl.TRIANGLE_STRIP) {  // TODO; remove 2nd check
+        				    var indOff = shape._cf.geometry.node._indexOffset;
+        				    for (var io=1; io<indOff.length; io++) {
+             					gl.drawElements(gl.TRIANGLE_STRIP, indOff[io]-indOff[io-1], gl.UNSIGNED_SHORT, 2*indOff[io-1]);
+             				}
+        				}
 						else {
 							gl.drawElements(shape._webgl.primType, shape._webgl.indexes[q].length, gl.UNSIGNED_SHORT, 0);
 						}
@@ -4006,7 +4129,8 @@ x3dom.gfx_webgl = (function () {
 					else
 					    this.numFaces += (shape._cf.geometry.node._vf.vertexCount[i] / 3);
 				}
-			} else {
+			} 
+			else {
 				this.numFaces += shape._cf.geometry.node._mesh._numFaces;
 			}
         }
@@ -4014,8 +4138,17 @@ x3dom.gfx_webgl = (function () {
 		if(shape._webgl.imageGeometry) {
 			for(var i=0; i<shape._cf.geometry.node._vf.vertexCount.length; i++)
 				this.numCoords += shape._cf.geometry.node._vf.vertexCount[i];
-		} else {
+			this.numDrawCalls += shape._cf.geometry.node._vf.vertexCount.length;
+		} 
+		else {
 			this.numCoords += shape._cf.geometry.node._mesh._numCoords;
+			
+			if (x3dom.isa(shape._cf.geometry.node, x3dom.nodeTypes.IndexedTriangleStripSet) 
+			    && shape._webgl.primType == gl.TRIANGLE_STRIP) {
+			    this.numDrawCalls += shape._cf.geometry.node._indexOffset.length;
+			}
+			else
+			    this.numDrawCalls += 1;
 		}
 		
         for (cnt=0; shape._webgl.texture !== undefined && 
@@ -4166,7 +4299,7 @@ x3dom.gfx_webgl = (function () {
             scene._webgl.fboPick.pixelData = null;
             
             scene._webgl.pickShader = getDefaultShaderProgram(gl, 'pick');
-			scene._webgl.pickShaderIG = this.getShaderProgram(gl, ['vs-x3d-pickIG', 'fs-x3d-pick']); 
+			scene._webgl.pickShaderIG = this.getShaderProgram(gl, ['vs-x3d-pickIG', 'fs-x3d-pick']); // TODO: mobile
             scene._webgl.pickColorShader = getDefaultShaderProgram(gl, 'vertexcolorUnlit');
             scene._webgl.pickTexCoordShader = getDefaultShaderProgram(gl, 'texcoordUnlit');
             
@@ -4220,6 +4353,7 @@ x3dom.gfx_webgl = (function () {
         var t0, t1;
         this.numFaces = 0;
         this.numCoords = 0;
+        this.numDrawCalls = 0;
         
         // render traversal
         scene.drawableObjects = null;
@@ -4481,6 +4615,8 @@ x3dom.gfx_webgl = (function () {
 			this.canvas.parent.statDiv.appendChild(document.createTextNode("#Tris: " + this.numFaces));
             this.canvas.parent.statDiv.appendChild(document.createElement("br"));
             this.canvas.parent.statDiv.appendChild(document.createTextNode("#Pnts: " + this.numCoords));
+            this.canvas.parent.statDiv.appendChild(document.createElement("br"));
+            this.canvas.parent.statDiv.appendChild(document.createTextNode("#DrawCalls: " + this.numDrawCalls));
         }
         
         //scene.drawableObjects = null;
