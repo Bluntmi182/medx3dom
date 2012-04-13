@@ -156,7 +156,7 @@ vec4 cTexture3D(sampler2D uData,vec3 volpos)
   return mix( texture2D(uData,texpos1), texture2D(uData,texpos2), (volpos.z*numberOfSlices)-s1);
 }
 
-vec4 RGBToHSV( vec4 rgba ) { 
+vec4 RGBToHSVv4( vec4 rgba ) { 
   vec4 return_value; 
   float v, x, f, i; 
   float R = rgba.r, G = rgba.g, B = rgba.b; 
@@ -172,12 +172,12 @@ vec4 RGBToHSV( vec4 rgba ) {
   return return_value; 
 }
 
-vec3 RGBToHSV( vec3 rgb ) {
-  return RGBToHSV( vec4(rgb,1.0) ).rgb;
+vec3 RGBToHSVv3( vec3 rgb ) {
+  return RGBToHSVv4( vec4(rgb,1.0) ).rgb;
 }
 
 // convert from hsv to rgb 
-vec4 HSVToRGB( vec4 hsva ) { 
+vec4 HSVToRGBv4( vec4 hsva ) { 
   vec4 return_value; 
   float h = hsva.x, s = hsva.y, v = hsva.z, m, n, f; 
   float i; 
@@ -203,8 +203,8 @@ vec4 HSVToRGB( vec4 hsva ) {
   return return_value; 
 }
 
-vec3 HSVToRGB( vec3 hsv ) {
-  return HSVToRGB( vec4(hsv,1.0) ).rgb;
+vec3 HSVToRGBv3( vec3 hsv ) {
+  return HSVToRGBv4( vec4(hsv,1.0) ).rgb;
 }
 
 vec4 normalizedNormalFromTexture(sampler2D normals, vec4 pos) {
@@ -229,6 +229,7 @@ float rayexit(vec3 r0, vec3 dir) {
 	return min(tmax.x,min(tmax.y,tmax.z));
 }
 
+
 // CartoonVolumeStyle
 // Notes:
 void CartoonVolumeStyle( inout vec4 current_color,
@@ -242,7 +243,7 @@ void CartoonVolumeStyle( inout vec4 current_color,
   
   if( enabled && colorSteps >= 1 ) {
     if( normal.a > 0.001 ) {
-      float cos_a = dot( normal.xyz, viewdir.xyz )/6.2832;
+      float cos_a = dot( normal.xyz, viewdir.xyz );
       if( cos_a < 0.0 ) {
         current_color.rgb = vec3( 0.0, 0.0, 0.0 );
       } else {
@@ -252,7 +253,7 @@ void CartoonVolumeStyle( inout vec4 current_color,
         if( interval >= float(colorSteps) )
           interval = float(colorSteps) - 1.0;
         float w = interval * step;
-        current_color.rgb = HSVToRGB( mix(orthogonalColorHSV,  parallelColorHSV,w));
+        current_color.rgb = HSVToRGBv3( mix(orthogonalColorHSV,  parallelColorHSV,w));
         //HSVToRGB( orthogonalColorHSV * w + parallelColorHSV * (1.0-w) );
 	
         // 2 -> 0-0.5-1           0.5
@@ -274,7 +275,6 @@ void CartoonVolumeStyle( inout vec4 current_color,
 //   RayResult.color  - the computed RGBA color for this fragment
 //   RayResult.zpoint - the point to use for depth calculations,
 //                      if zpoint.x<0, no depth is computed
-
 RayResult traverseRay(vec4 r0, vec4 dir) 
 {
 	//useful stuff (hopefully not computed if not needed...?)
@@ -289,16 +289,15 @@ RayResult traverseRay(vec4 r0, vec4 dir)
 	rr.color = vec4(0.0, 0.0, 0.0, 0.0);
 	// initial depth is not defined
 	rr.zpoint = vec4(-1.0, 0.0, 0.0, 0.0);
-
 	
 	//BEGIN PRE-LOOP
-	vec3 parallelColorHSV_4188f80 = RGBToHSV(parallelColor4188f80);
-	vec3 orthogonalColorHSV_4188f80 = RGBToHSV(orthogonalColor4188f80);
+	vec3 parallelColorHSV_4188f80 = RGBToHSVv3(parallelColor4188f80);
+	vec3 orthogonalColorHSV_4188f80 = RGBToHSVv3(orthogonalColor4188f80);
 	//END PRE-LOOP
 	
 	// compositing loop
 	//while( rr.color.a<0.95 && r0.w>=0.0 ) 
-	for (float rayIterator = 0.0; rayIterator < 100.0; rayIterator += 1.0)
+	for (float rayIterator = 0.0; rayIterator < 10.0; rayIterator += 1.0)
 	{	
 		vec4 orig_sample_color = cTexture3D(uVolData, r0.xyz);
 
